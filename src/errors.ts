@@ -8,6 +8,7 @@
 
 // ---- Base Error ----
 
+/** Base error class for all Hashi SDK errors. */
 export class HashiError extends Error {
 	constructor(message: string) {
 		super(message);
@@ -17,6 +18,10 @@ export class HashiError extends Error {
 
 // ---- Transaction Errors ----
 
+/**
+ * Error thrown for invalid transaction parameters or Move abort codes.
+ * Includes optional `module` and `abortCode` fields for programmatic handling.
+ */
 export class HashiTransactionError extends HashiError {
 	/** The Move module that produced the abort, if known. */
 	readonly module?: string;
@@ -36,6 +41,7 @@ export class HashiTransactionError extends HashiError {
 
 // ---- Query Errors ----
 
+/** Error thrown when an RPC query fails. */
 export class HashiQueryError extends HashiError {
 	constructor(message: string) {
 		super(message);
@@ -45,6 +51,7 @@ export class HashiQueryError extends HashiError {
 
 // ---- Parse Errors ----
 
+/** Error thrown when BCS deserialization or event parsing fails. */
 export class HashiParseError extends HashiError {
 	constructor(message: string) {
 		super(message);
@@ -54,6 +61,7 @@ export class HashiParseError extends HashiError {
 
 // ---- Bitcoin Errors ----
 
+/** Error thrown for invalid Bitcoin addresses or amounts. */
 export class HashiBitcoinError extends HashiError {
 	constructor(message: string) {
 		super(message);
@@ -63,6 +71,7 @@ export class HashiBitcoinError extends HashiError {
 
 // ---- Config Errors ----
 
+/** Error thrown for invalid configuration (bad addresses, missing fields). */
 export class HashiConfigError extends HashiError {
 	constructor(message: string) {
 		super(message);

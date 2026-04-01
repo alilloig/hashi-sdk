@@ -1,3 +1,7 @@
+// Client facade
+export { HashiClient } from './client.js';
+export type { HashiClientOptions } from './client.js';
+
 // Configuration
 export { HashiConfig, MAINNET_CONFIG, TESTNET_CONFIG } from './utils/config.js';
 export type { HashiConfigOptions, NetworkPreset } from './utils/config.js';

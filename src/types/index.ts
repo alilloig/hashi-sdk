@@ -1,4 +1,14 @@
-// Domain types
+/**
+ * Domain types for the Hashi bridge SDK.
+ *
+ * These types represent the deserialized on-chain state objects.
+ * All addresses are 0x-prefixed lowercase hex strings, all u64 values
+ * are bigint, and all byte vectors are Uint8Array.
+ *
+ * @module types
+ */
+
+// Common shared types
 export type { Bag, VecMapEntry, PaginatedResult } from './common.js';
 export type { Committee, CommitteeMember, CommitteeSignature, MemberInfo } from './committee.js';
 export type { Config, ConfigValue } from './config.js';

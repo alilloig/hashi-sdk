@@ -9,8 +9,39 @@
 	"types": "./dist/cjs/index.d.ts",
 	"exports": {
 		".": {
+			"types": "./dist/esm/index.d.ts",
 			"import": "./dist/esm/index.js",
 			"require": "./dist/cjs/index.js"
+		},
+		"./client": {
+			"types": "./dist/esm/client.d.ts",
+			"import": "./dist/esm/client.js",
+			"require": "./dist/cjs/client.js"
+		},
+		"./transactions": {
+			"types": "./dist/esm/transactions/index.d.ts",
+			"import": "./dist/esm/transactions/index.js",
+			"require": "./dist/cjs/transactions/index.js"
+		},
+		"./queries": {
+			"types": "./dist/esm/queries/index.d.ts",
+			"import": "./dist/esm/queries/index.js",
+			"require": "./dist/cjs/queries/index.js"
+		},
+		"./events": {
+			"types": "./dist/esm/events/index.d.ts",
+			"import": "./dist/esm/events/index.js",
+			"require": "./dist/cjs/events/index.js"
+		},
+		"./bitcoin": {
+			"types": "./dist/esm/bitcoin.d.ts",
+			"import": "./dist/esm/bitcoin.js",
+			"require": "./dist/cjs/bitcoin.js"
+		},
+		"./types": {
+			"types": "./dist/esm/types/index.d.ts",
+			"import": "./dist/esm/types/index.js",
+			"require": "./dist/cjs/types/index.js"
 		}
 	},
 	"files": [
