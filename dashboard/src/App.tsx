@@ -14,6 +14,12 @@ import { Header } from './components/Header';
 import { FaucetsPanel } from './panels/FaucetsPanel';
 import { QueriesPanel } from './panels/QueriesPanel';
 import { UserOperationsPanel } from './panels/UserOperationsPanel';
+import { ValidatorPanel } from './panels/ValidatorPanel';
+import { CommitteeDepositsPanel } from './panels/CommitteeDepositsPanel';
+import { CommitteeWithdrawalsPanel } from './panels/CommitteeWithdrawalsPanel';
+import { ReconfigPanel } from './panels/ReconfigPanel';
+import { CertificatePanel } from './panels/CertificatePanel';
+import { GovernancePanel } from './panels/GovernancePanel';
 import { PlaceholderPanel } from './panels/PlaceholderPanel';
 
 const queryClient = new QueryClient();
@@ -64,6 +70,30 @@ function AppContent() {
 
     if (activeHash === '#user-operations') {
       return <UserOperationsPanel />;
+    }
+
+    if (activeHash === '#validator-management') {
+      return <ValidatorPanel />;
+    }
+
+    if (activeHash === '#committee-deposits') {
+      return <CommitteeDepositsPanel />;
+    }
+
+    if (activeHash === '#committee-withdrawals') {
+      return <CommitteeWithdrawalsPanel />;
+    }
+
+    if (activeHash === '#reconfiguration') {
+      return <ReconfigPanel />;
+    }
+
+    if (activeHash === '#certificate-operations') {
+      return <CertificatePanel />;
+    }
+
+    if (activeHash === '#governance') {
+      return <GovernancePanel />;
     }
 
     const title = PANEL_TITLES[activeHash];
