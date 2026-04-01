@@ -13,6 +13,7 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { FaucetsPanel } from './panels/FaucetsPanel';
 import { QueriesPanel } from './panels/QueriesPanel';
+import { UserOperationsPanel } from './panels/UserOperationsPanel';
 import { PlaceholderPanel } from './panels/PlaceholderPanel';
 
 const queryClient = new QueryClient();
@@ -59,6 +60,10 @@ function AppContent() {
 
     if (activeHash === '#queries') {
       return <QueriesPanel />;
+    }
+
+    if (activeHash === '#user-operations') {
+      return <UserOperationsPanel />;
     }
 
     const title = PANEL_TITLES[activeHash];
