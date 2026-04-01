@@ -120,6 +120,20 @@ export {
 	parseHashiEventStrict,
 } from './events/index.js';
 
+// Query functions
+export {
+	getHashiState,
+	getConfig,
+	getDepositRequest,
+	listDepositRequests,
+	getWithdrawalRequest,
+	listPendingWithdrawals,
+	getCommittee,
+	getMemberInfo,
+	getUtxo,
+} from './queries/index.js';
+export type { QueryContext } from './queries/index.js';
+
 // BCS re-exports
 export {
 	HashiBcs,
