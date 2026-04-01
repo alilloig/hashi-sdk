@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { CoreClient, SuiClientTypes } from '@mysten/sui/client';
 import { bcs } from '@mysten/sui/bcs';
 import { HashiConfig } from '../src/utils/config';
