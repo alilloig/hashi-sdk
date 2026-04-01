@@ -18,37 +18,31 @@ describe('HashiConfig', () => {
 			expect(config.hashiObjectId).toBe(VALID_ADDRESS);
 		});
 
-		it('rejects missing 0x prefix', () => {
-			expect(
-				() =>
-					new HashiConfig({
-						packageId: 'ab'.repeat(32),
-						originalPackageId: VALID_ADDRESS,
-						hashiObjectId: VALID_ADDRESS,
-					}),
-			).toThrow(HashiConfigError);
+		it('normalizes missing 0x prefix', () => {
+			const config = new HashiConfig({
+				packageId: 'ab'.repeat(32),
+				originalPackageId: VALID_ADDRESS,
+				hashiObjectId: VALID_ADDRESS,
+			});
+			expect(config.packageId).toBe(VALID_ADDRESS);
 		});
 
-		it('rejects uppercase hex', () => {
-			expect(
-				() =>
-					new HashiConfig({
-						packageId: '0x' + 'AB'.repeat(32),
-						originalPackageId: VALID_ADDRESS,
-						hashiObjectId: VALID_ADDRESS,
-					}),
-			).toThrow(HashiConfigError);
+		it('normalizes uppercase hex', () => {
+			const config = new HashiConfig({
+				packageId: '0x' + 'AB'.repeat(32),
+				originalPackageId: VALID_ADDRESS,
+				hashiObjectId: VALID_ADDRESS,
+			});
+			expect(config.packageId).toBe(VALID_ADDRESS);
 		});
 
-		it('rejects wrong length', () => {
-			expect(
-				() =>
-					new HashiConfig({
-						packageId: '0x' + 'ab'.repeat(16),
-						originalPackageId: VALID_ADDRESS,
-						hashiObjectId: VALID_ADDRESS,
-					}),
-			).toThrow(HashiConfigError);
+		it('normalizes shorter hex with zero-padding', () => {
+			const config = new HashiConfig({
+				packageId: '0x' + 'ab'.repeat(16),
+				originalPackageId: VALID_ADDRESS,
+				hashiObjectId: VALID_ADDRESS,
+			});
+			expect(config.packageId).toBe('0x' + '0'.repeat(32) + 'ab'.repeat(16));
 		});
 
 		it('rejects non-string values', () => {
@@ -116,7 +110,7 @@ describe('HashiConfig', () => {
 		it('includes field name in validation errors', () => {
 			try {
 				new HashiConfig({
-					packageId: 'bad',
+					packageId: 'xyz_not_hex',
 					originalPackageId: VALID_ADDRESS,
 					hashiObjectId: VALID_ADDRESS,
 				});

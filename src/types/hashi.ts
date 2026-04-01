@@ -7,27 +7,37 @@ import type { Bag } from './common.js';
 /**
  * The root Hashi shared object that holds all bridge state.
  * Dynamic-field Bags are represented by their ID and size,
- * while nested structs are typed directly.
+ * while nested structs include their top-level scalar fields.
  */
 export interface HashiState {
 	id: string;
-	/** Committee set managing epoch transitions. */
 	committeeSet: {
+		members: Bag;
 		epoch: bigint;
+		committees: Bag;
 		pendingEpochChange: bigint | null;
+		mpcPublicKey: Uint8Array;
 	};
-	/** Bridge configuration parameters. */
-	config: Bag;
-	/** Treasury managing BTC minting/burning. */
-	treasury: Bag;
-	/** Queue of pending deposit requests. */
-	depositQueue: Bag;
-	/** Queue of pending withdrawal requests. */
-	withdrawalQueue: Bag;
-	/** Pool of active and spent UTXOs. */
-	utxoPool: Bag;
-	/** Governance proposals bag. */
+	config: {
+		config: Array<{ key: string; value: import('./config.js').ConfigValue }>;
+		enabledVersions: bigint[];
+		upgradeCap: { id: string; package: string; version: bigint; policy: number } | null;
+	};
+	treasury: {
+		objects: Bag;
+	};
+	depositQueue: {
+		requests: Bag;
+	};
+	withdrawalQueue: {
+		requests: Bag;
+		pendingWithdrawals: Bag;
+		numConsumedPresigs: bigint;
+	};
+	utxoPool: {
+		activeUtxos: Bag;
+		spentUtxos: Bag;
+	};
 	proposals: Bag;
-	/** TOB certificates bag. */
 	tob: Bag;
 }

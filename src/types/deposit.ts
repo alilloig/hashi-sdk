@@ -11,7 +11,7 @@ export interface DepositRequest {
 	utxo: Utxo;
 	timestampMs: bigint;
 	requesterAddress: string;
-	suiTxDigest: Uint8Array;
+	suiTxDigest: string;
 }
 
 /** The on-chain deposit request queue. */

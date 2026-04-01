@@ -20,14 +20,14 @@ export interface WithdrawalRequestInfo {
 	bitcoinAddress: Uint8Array;
 	timestampMs: bigint;
 	requesterAddress: string;
-	suiTxDigest: Uint8Array;
+	suiTxDigest: string;
 }
 
 /** A withdrawal request including the locked BTC balance. */
 export interface WithdrawalRequest {
 	info: WithdrawalRequestInfo;
 	/** The locked BTC balance in satoshis. */
-	btcBalance: bigint;
+	btc: bigint;
 	approved: boolean;
 }
 
@@ -59,7 +59,7 @@ export interface WithdrawalRequestedEvent {
 	bitcoinAddress: Uint8Array;
 	timestampMs: bigint;
 	requesterAddress: string;
-	suiTxDigest: Uint8Array;
+	suiTxDigest: string;
 }
 
 export interface WithdrawalApprovedEvent {

@@ -22,4 +22,5 @@ export type ConfigValue =
 export interface Config {
 	entries: Array<VecMapEntry<string, ConfigValue>>;
 	enabledVersions: bigint[];
+	upgradeCap: { id: string; package: string; version: bigint; policy: number } | null;
 }

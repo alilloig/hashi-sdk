@@ -23,11 +23,27 @@ export interface HashiConfigOptions {
 }
 
 /**
- * Validates that a string looks like a Sui address / object ID:
- * 0x-prefixed, lowercase hex, 66 characters total (32 bytes).
+ * Normalizes a Sui address/object ID to canonical form:
+ * 0x-prefixed, lowercase, zero-padded to 66 chars.
+ * Accepts with or without 0x prefix, any case, shorter hex.
+ * Throws HashiConfigError for non-hex or too-long input.
  */
-function isValidSuiAddress(value: string): boolean {
-	return /^0x[0-9a-f]{64}$/.test(value);
+export function normalizeSuiAddress(value: string): string {
+	let hex = value.toLowerCase();
+	if (hex.startsWith('0x')) {
+		hex = hex.slice(2);
+	}
+	if (!/^[0-9a-f]+$/.test(hex)) {
+		throw new HashiConfigError(
+			`Invalid hex characters in address: "${value}"`,
+		);
+	}
+	if (hex.length > 64) {
+		throw new HashiConfigError(
+			`Address too long (max 64 hex chars without 0x prefix): "${value}"`,
+		);
+	}
+	return '0x' + hex.padStart(64, '0');
 }
 
 // ---- Network Presets ----
@@ -119,19 +135,21 @@ export class HashiConfig {
 	}
 
 	/**
-	 * Validate that a value is a well-formed Sui address.
-	 * Returns the validated value or throws HashiConfigError.
+	 * Validate and normalize a Sui address/object ID.
+	 * Accepts any hex string (with/without 0x, any case, shorter than 64 chars)
+	 * and returns the canonical 0x-prefixed, lowercase, 66-char form.
 	 */
 	private static validateAddress(value: unknown, fieldName: string): string {
 		if (typeof value !== 'string') {
 			throw new HashiConfigError(`${fieldName} must be a string, got ${typeof value}`);
 		}
-		if (!isValidSuiAddress(value)) {
+		try {
+			return normalizeSuiAddress(value);
+		} catch (e) {
 			throw new HashiConfigError(
-				`${fieldName} must be a valid Sui address (0x-prefixed, lowercase hex, 66 characters). Got: "${value}"`,
+				`${fieldName}: ${e instanceof Error ? e.message : String(e)}`,
 			);
 		}
-		return value;
 	}
 
 	/**

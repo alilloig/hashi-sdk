@@ -26,7 +26,7 @@ export interface VecMapEntry<K, V> {
 
 /** A paginated result for query responses. */
 export interface PaginatedResult<T> {
-	data: T[];
+	items: T[];
 	hasNextPage: boolean;
 	nextCursor: string | null;
 }

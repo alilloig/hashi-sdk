@@ -29,8 +29,12 @@ export interface CommitteeSignature {
 	signersBitmap: Uint8Array;
 }
 
-/** Convenience view type: member address + weight for display. */
+/** Full validator member info from the committee set. */
 export interface MemberInfo {
 	validatorAddress: string;
-	weight: bigint;
+	operatorAddress: string;
+	nextEpochPublicKey: Uint8Array;
+	endpointUrl: string;
+	tlsPublicKey: Uint8Array;
+	nextEpochEncryptionPublicKey: Uint8Array;
 }
