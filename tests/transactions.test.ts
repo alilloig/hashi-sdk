@@ -195,6 +195,7 @@ describe('cancelWithdrawal snapshot', () => {
 	it('produces correct PTB structure', () => {
 		const builder = cancelWithdrawal(config, {
 			requestId: VALID_REQUEST_ID,
+			recipient: VALID_REQUEST_ID,
 		});
 
 		const tx = new Transaction();
@@ -207,6 +208,7 @@ describe('cancelWithdrawal snapshot', () => {
 	it('creates exactly 2 commands', () => {
 		const builder = cancelWithdrawal(config, {
 			requestId: VALID_REQUEST_ID,
+			recipient: VALID_REQUEST_ID,
 		});
 
 		const tx = new Transaction();
@@ -219,6 +221,7 @@ describe('cancelWithdrawal snapshot', () => {
 	it('has correct command types in order', () => {
 		const builder = cancelWithdrawal(config, {
 			requestId: VALID_REQUEST_ID,
+			recipient: VALID_REQUEST_ID,
 		});
 
 		const tx = new Transaction();
@@ -235,6 +238,7 @@ describe('cancelWithdrawal snapshot', () => {
 	it('returns a TransactionResult', () => {
 		const builder = cancelWithdrawal(config, {
 			requestId: VALID_REQUEST_ID,
+			recipient: VALID_REQUEST_ID,
 		});
 
 		const tx = new Transaction();
@@ -460,6 +464,7 @@ describe('cancelWithdrawal validation', () => {
 		expect(() =>
 			cancelWithdrawal(config, {
 				requestId: 'invalid-hex-id',
+				recipient: VALID_REQUEST_ID,
 			}),
 		).toThrow(HashiTransactionError);
 	});

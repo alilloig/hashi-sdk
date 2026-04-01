@@ -15,6 +15,8 @@ import { validateAddress } from './validation.js';
 export interface CancelWithdrawalParams {
 	/** The withdrawal request object ID to cancel. */
 	requestId: string;
+	/** The address to receive the refunded BTC coin. Typically the sender's address. */
+	recipient: string;
 }
 
 /**
@@ -35,6 +37,7 @@ export function cancelWithdrawal(
 ): (tx: Transaction) => TransactionResult {
 	// -- Validate all inputs synchronously --
 	const normalizedRequestId = validateAddress(params.requestId, 'requestId');
+	const normalizedRecipient = validateAddress(params.recipient, 'recipient');
 
 	const packageId = config.packageId;
 	const hashiObjectId = config.hashiObjectId;
@@ -51,13 +54,7 @@ export function cancelWithdrawal(
 			}),
 		);
 
-		// Step 2: Transfer the returned BTC coin to the sender.
-		// In Sui SDK v2, passing tx.pure.address with a zero address as placeholder
-		// for the sender. The runtime will resolve this at execution time.
-		// The convention is to use the sender address, but since we don't have it
-		// at build time, we use a placeholder that gets resolved.
-		return tx.transferObjects([returnedCoin], tx.pure.address(
-			'0x0000000000000000000000000000000000000000000000000000000000000000',
-		));
+		// Step 2: Transfer the returned BTC coin to the recipient.
+		return tx.transferObjects([returnedCoin], tx.pure.address(normalizedRecipient));
 	};
 }

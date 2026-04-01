@@ -37,7 +37,7 @@ exports[`cancelWithdrawal snapshot > produces correct PTB structure 1`] = `
     },
     {
       "Pure": {
-        "bytes": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        "bytes": "3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d0="
       },
       "$kind": "Pure"
     }

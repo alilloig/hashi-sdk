@@ -112,6 +112,7 @@ describe('HashiClient', () => {
 			client = createClient();
 			const build = client.cancelWithdrawal({
 				requestId: '0x' + 'aa'.repeat(32),
+				recipient: '0x' + 'bb'.repeat(32),
 			});
 			expect(typeof build).toBe('function');
 		});
