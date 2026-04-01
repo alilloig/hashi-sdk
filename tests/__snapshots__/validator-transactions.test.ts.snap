@@ -1,0 +1,458 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`approveWithdrawalRequests snapshot (batched) > produces correct PTB structure with batched calls 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    },
+    {
+      "Pure": {
+        "bytes": "3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d0="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "BQAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "MKurq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urqw=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AvAP"
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "ERERERERERERERERERERERERERERERERERERERERERE="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "BQAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "MKurq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urqw=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AvAP"
+      },
+      "$kind": "Pure"
+    }
+  ],
+  "commands": [
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "withdraw",
+        "function": "approve_request",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 2,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 3,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 4,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "withdraw",
+        "function": "approve_request",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 5,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 6,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 7,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 8,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;
+
+exports[`commitWithdrawalTx snapshot (double-BCS) > produces correct PTB structure 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    },
+    {
+      "Pure": {
+        "bytes": "Ad3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d"
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "ASQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AR1QwwAAAAAAABSrq6urq6urq6urq6urq6urq6urqw=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AQAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "MKurq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urqw=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AvAP"
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Object": {
+        "SharedObject": {
+          "objectId": "0x0000000000000000000000000000000000000000000000000000000000000006",
+          "initialSharedVersion": 1,
+          "mutable": false
+        },
+        "$kind": "SharedObject"
+      },
+      "$kind": "Object"
+    },
+    {
+      "UnresolvedObject": {
+        "objectId": "0x0000000000000000000000000000000000000000000000000000000000000008",
+        "mutable": false
+      },
+      "$kind": "UnresolvedObject"
+    }
+  ],
+  "commands": [
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "withdraw",
+        "function": "commit_withdrawal_tx",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 2,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 3,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 4,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 5,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 6,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 7,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 8,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 9,
+            "type": "object",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;
+
+exports[`confirmDeposit snapshot (two-call PTB) > produces correct PTB structure with 2 MoveCall commands 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "Pure": {
+        "bytes": "AQAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "MKurq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6urqw=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AvAP"
+      },
+      "$kind": "Pure"
+    },
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    },
+    {
+      "Pure": {
+        "bytes": "3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d0="
+      },
+      "$kind": "Pure"
+    }
+  ],
+  "commands": [
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "committee",
+        "function": "new_committee_signature",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 2,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "deposit",
+        "function": "confirm_deposit",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 3,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 4,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Result": 0,
+            "$kind": "Result"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;
+
+exports[`vote with type parameter snapshot > produces correct PTB structure with type argument 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    },
+    {
+      "Pure": {
+        "bytes": "ERERERERERERERERERERERERERERERERERERERERERE="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Object": {
+        "SharedObject": {
+          "objectId": "0x0000000000000000000000000000000000000000000000000000000000000006",
+          "initialSharedVersion": 1,
+          "mutable": false
+        },
+        "$kind": "SharedObject"
+      },
+      "$kind": "Object"
+    }
+  ],
+  "commands": [
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "proposal",
+        "function": "vote",
+        "typeArguments": [
+          "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa::update_config::UpdateConfig"
+        ],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 2,
+            "type": "object",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;

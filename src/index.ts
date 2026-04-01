@@ -55,20 +55,108 @@ export type {
 
 // Transaction builders
 export {
+	// User operations
 	createDepositRequest,
 	requestWithdrawal,
 	cancelWithdrawal,
+	// Deposit operations (committee/validator)
+	confirmDeposit,
+	deleteExpiredDeposits,
+	// Withdrawal operations (committee/validator)
+	approveWithdrawalRequests,
+	commitWithdrawalTx,
+	signWithdrawal,
+	confirmWithdrawal,
+	deleteExpiredSpentUtxo,
+	encodeUtxoId,
+	encodeOutputUtxo,
+	// Validator management
+	register,
+	updatePublicKey,
+	updateOperatorAddress,
+	updateEndpointUrl,
+	updateTlsPublicKey,
+	updateEncryptionPublicKey,
+	// Reconfiguration
+	startReconfig,
+	endReconfig,
+	// Certificate submission
+	submitDkgCert,
+	submitRotationCert,
+	submitNonceCert,
+	destroyAllCerts,
+	// Governance
+	proposeUpdateConfig,
+	proposeEnableVersion,
+	proposeDisableVersion,
+	proposeUpgrade,
+	vote,
+	removeVote,
+	deleteExpiredProposal,
+	executeUpdateConfig,
+	executeEnableVersion,
+	executeDisableVersion,
+	executeUpgrade,
+	finalizeUpgrade,
+	// Shared objects
 	CLOCK_OBJECT_ID,
+	SUI_SYSTEM_OBJECT_ID,
+	RANDOM_OBJECT_ID,
+	// Validation utilities
 	validateU64,
 	validateTxid,
 	validateAddress,
 	validateVout,
 	validateBitcoinAddress,
+	validateSignature,
+	validateSignersBitmap,
+	validateNoDuplicates,
+	validateNonEmpty,
 } from './transactions/index.js';
 export type {
+	// User operation params
 	CreateDepositRequestParams,
 	RequestWithdrawalParams,
 	CancelWithdrawalParams,
+	// Deposit operation params
+	ConfirmDepositParams,
+	DeleteExpiredDepositsParams,
+	// Withdrawal operation params
+	ApproveWithdrawalRequestsParams,
+	UtxoInput,
+	OutputUtxoInput,
+	CommitWithdrawalTxParams,
+	SignWithdrawalParams,
+	ConfirmWithdrawalParams,
+	DeleteExpiredSpentUtxoParams,
+	// Validator management params
+	UpdatePublicKeyParams,
+	UpdateOperatorAddressParams,
+	UpdateEndpointUrlParams,
+	UpdateTlsPublicKeyParams,
+	UpdateEncryptionPublicKeyParams,
+	// Reconfiguration params
+	EndReconfigParams,
+	// Certificate submission params
+	SubmitDkgCertParams,
+	SubmitRotationCertParams,
+	SubmitNonceCertParams,
+	DestroyAllCertsParams,
+	// Governance params
+	ProposalTypeName,
+	ConfigValueType,
+	ProposeUpdateConfigParams,
+	ProposeEnableVersionParams,
+	ProposeDisableVersionParams,
+	ProposeUpgradeParams,
+	VoteParams,
+	RemoveVoteParams,
+	DeleteExpiredProposalParams,
+	ExecuteUpdateConfigParams,
+	ExecuteEnableVersionParams,
+	ExecuteDisableVersionParams,
+	ExecuteUpgradeParams,
+	FinalizeUpgradeParams,
 } from './transactions/index.js';
 
 // Bitcoin helpers

@@ -201,3 +201,86 @@ export function validateBitcoinAddress(bitcoinAddress: string | Uint8Array): Uin
 		`bitcoinAddress must be a Uint8Array or hex string, got ${typeof bitcoinAddress}`,
 	);
 }
+
+// ---- Validator Preflight Checks ----
+
+/**
+ * Validate a committee signature (compressed BLS12-381 G2 point).
+ *
+ * Must be a Uint8Array with exactly 48 bytes.
+ *
+ * @param signature - The signature bytes.
+ * @param fieldName - Name of the field, used in error messages.
+ * @returns The validated signature as number[].
+ * @throws HashiTransactionError if the signature is invalid.
+ */
+export function validateSignature(signature: Uint8Array, fieldName: string = 'signature'): number[] {
+	if (!(signature instanceof Uint8Array)) {
+		throw new HashiTransactionError(
+			`${fieldName} must be a Uint8Array, got ${typeof signature}`,
+		);
+	}
+	if (signature.length !== 48) {
+		throw new HashiTransactionError(
+			`${fieldName} must be exactly 48 bytes (compressed BLS12-381 G2 point), got ${signature.length}`,
+		);
+	}
+	return Array.from(signature);
+}
+
+/**
+ * Validate a signers bitmap.
+ *
+ * Must be a Uint8Array with length > 0.
+ *
+ * @param bitmap - The bitmap bytes.
+ * @returns The validated bitmap as number[].
+ * @throws HashiTransactionError if the bitmap is invalid.
+ */
+export function validateSignersBitmap(bitmap: Uint8Array): number[] {
+	if (!(bitmap instanceof Uint8Array)) {
+		throw new HashiTransactionError(
+			`signersBitmap must be a Uint8Array, got ${typeof bitmap}`,
+		);
+	}
+	if (bitmap.length === 0) {
+		throw new HashiTransactionError(
+			'signersBitmap must have length > 0',
+		);
+	}
+	return Array.from(bitmap);
+}
+
+/**
+ * Validate that an array has no duplicate elements.
+ *
+ * @param items - Array of strings to check.
+ * @param fieldName - Name of the field, used in error messages.
+ * @throws HashiTransactionError if duplicates are found.
+ */
+export function validateNoDuplicates(items: string[], fieldName: string): void {
+	const seen = new Set<string>();
+	for (const item of items) {
+		if (seen.has(item)) {
+			throw new HashiTransactionError(
+				`${fieldName} contains duplicate entry: "${item}"`,
+			);
+		}
+		seen.add(item);
+	}
+}
+
+/**
+ * Validate that an array is non-empty.
+ *
+ * @param items - Array to check.
+ * @param fieldName - Name of the field, used in error messages.
+ * @throws HashiTransactionError if array is empty.
+ */
+export function validateNonEmpty(items: unknown[], fieldName: string): void {
+	if (items.length === 0) {
+		throw new HashiTransactionError(
+			`${fieldName} must not be empty`,
+		);
+	}
+}
