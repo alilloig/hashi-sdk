@@ -5,13 +5,17 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DAppKitProvider } from '@mysten/dapp-kit-react';
 import { HashiClientProvider } from './context/HashiClientContext';
 import { dAppKit } from './dapp-kit';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { FaucetsPanel } from './panels/FaucetsPanel';
+import { QueriesPanel } from './panels/QueriesPanel';
 import { PlaceholderPanel } from './panels/PlaceholderPanel';
+
+const queryClient = new QueryClient();
 
 /** Read the current URL hash, defaulting to #faucets. */
 function getHash(): string {
@@ -53,6 +57,10 @@ function AppContent() {
       return <FaucetsPanel />;
     }
 
+    if (activeHash === '#queries') {
+      return <QueriesPanel />;
+    }
+
     const title = PANEL_TITLES[activeHash];
     if (title) {
       return <PlaceholderPanel title={title} />;
@@ -75,11 +83,13 @@ function AppContent() {
 
 export default function App() {
   return (
-    <DAppKitProvider dAppKit={dAppKit}>
-      <HashiClientProvider>
-        <AppContent />
-      </HashiClientProvider>
-    </DAppKitProvider>
+    <QueryClientProvider client={queryClient}>
+      <DAppKitProvider dAppKit={dAppKit}>
+        <HashiClientProvider>
+          <AppContent />
+        </HashiClientProvider>
+      </DAppKitProvider>
+    </QueryClientProvider>
   );
 }
 
