@@ -21,6 +21,7 @@ import { WalletGuard } from '../components/WalletGuard';
 import { TransactionPreview } from '../components/TransactionPreview';
 import { OperationPanel } from '../components/OperationPanel';
 import { JsonViewer } from '../components/JsonViewer';
+import { decodeBitcoinAddress } from 'hashi-sdk/bitcoin';
 
 // ---------------------------------------------------------------------------
 // Shared styles (consistent with QueriesPanel)
@@ -357,9 +358,19 @@ function RequestWithdrawalPanel() {
 
   const handleBuild = useCallback(() => {
     if (!canBuild) return;
-    // bitcoinAddress is passed as hex bytes string
+    const addr = bitcoinAddress.trim();
+
+    // Auto-decode bech32/bech32m addresses (bc1.../tb1...) to witness program bytes
+    let addressBytes: Uint8Array | string;
+    if (addr.startsWith('bc1') || addr.startsWith('tb1')) {
+      const decoded = decodeBitcoinAddress(addr);
+      addressBytes = decoded.witnessProgram;
+    } else {
+      addressBytes = addr; // assume hex string
+    }
+
     const builder = client.requestWithdrawal({
-      bitcoinAddress: bitcoinAddress.trim(),
+      bitcoinAddress: addressBytes,
       amount: BigInt(amount.trim()),
     });
     build(builder);
@@ -372,15 +383,15 @@ function RequestWithdrawalPanel() {
   return (
     <OperationPanel
       title="requestWithdrawal"
-      description="Request a BTC withdrawal. Provide the Bitcoin destination address as hex bytes and the amount in satoshis."
+      description="Request a BTC withdrawal. Burns hBTC on Sui and queues a withdrawal to the specified Bitcoin address."
       result={renderTransactionResult(state)}
     >
       <div style={rowStyle}>
-        <span style={labelStyle}>Bitcoin address (hex):</span>
+        <span style={labelStyle}>Bitcoin address:</span>
         <input
           style={inputStyle}
           type="text"
-          placeholder="e.g. a1b2c3...64 hex chars for P2TR"
+          placeholder="tb1p... or bc1... or hex bytes"
           value={bitcoinAddress}
           onChange={(e) => setBitcoinAddress(e.target.value)}
           disabled={state.phase !== 'idle'}
@@ -398,8 +409,7 @@ function RequestWithdrawalPanel() {
         />
       </div>
       <div style={hintStyle}>
-        Hex-encoded witness program bytes (40 hex chars = 20 bytes for SegWit, 64 hex chars = 32 bytes for Taproot).
-        Use the <strong>Bitcoin Helpers</strong> panel to decode a tb1p/bc1 address into hex bytes.
+        Accepts bech32/bech32m addresses (tb1p..., bc1...) or hex-encoded witness program bytes.
       </div>
       <div style={{ ...rowStyle, marginTop: 12 }}>
         {state.phase === 'idle' && (
