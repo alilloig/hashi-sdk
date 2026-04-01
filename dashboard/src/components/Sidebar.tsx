@@ -17,6 +17,7 @@ const NAV_CATEGORIES = [
   { label: 'Governance', hash: '#governance' },
   { label: 'Events', hash: '#events' },
   { label: 'Bitcoin Helpers', hash: '#bitcoin-helpers' },
+  { label: 'Settings', hash: '#settings' },
 ] as const;
 
 interface SidebarProps {

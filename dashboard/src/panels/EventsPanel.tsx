@@ -13,7 +13,8 @@ import { SuiJsonRpcClient } from '@mysten/sui/jsonRpc';
 import { base58 } from '@scure/base';
 import { parseHashiEventStrict } from 'hashi-sdk/events';
 import type { HashiEvent, ParseHashiEventResult } from 'hashi-sdk/events';
-import { packageId, rpcUrl } from '../config';
+import { rpcUrl } from '../config';
+import { useHashiConfig } from '../context/HashiClientContext';
 import { OperationPanel } from '../components/OperationPanel';
 import { JsonViewer } from '../components/JsonViewer';
 import { ErrorDisplay } from '../components/ErrorDisplay';
@@ -54,8 +55,7 @@ const EVENT_TYPES: HashiEvent['type'][] = [
   'PackageUpgraded',
 ];
 
-/** Set of known package IDs for event parsing. */
-const PACKAGE_ID_SET = new Set([packageId]);
+// PACKAGE_ID_SET is computed dynamically from config (see EventsPanel component)
 
 // ---------------------------------------------------------------------------
 // Types
@@ -207,6 +207,9 @@ const statusDotStyle = (color: string): React.CSSProperties => ({
 // ---------------------------------------------------------------------------
 
 function LiveSubscriptionPanel() {
+  const { config } = useHashiConfig();
+  const pkgId = config.packageId;
+  const packageIdSet = new Set([pkgId]);
   const [status, setStatus] = useState<SubscriptionStatus>('stopped');
   const [eventLog, setEventLog] = useState<EventLogEntry[]>([]);
   const [filterType, setFilterType] = useState<string>('');
@@ -240,7 +243,7 @@ function LiveSubscriptionPanel() {
       });
 
       const result = await rpcClient.queryEvents({
-        query: { MoveModule: { package: packageId, module: 'deposit' } },
+        query: { MoveModule: { package: pkgId, module: 'deposit' } },
         cursor: cursorRef.current ?? undefined,
         limit: 50,
         order: 'ascending',
@@ -259,7 +262,7 @@ function LiveSubscriptionPanel() {
       const otherResults = await Promise.all(
         modules.map((mod) =>
           rpcClient.queryEvents({
-            query: { MoveModule: { package: packageId, module: mod } },
+            query: { MoveModule: { package: pkgId, module: mod } },
             cursor: cursorRef.current ?? undefined,
             limit: 50,
             order: 'ascending',
@@ -310,7 +313,7 @@ function LiveSubscriptionPanel() {
 
             const parseResult = parseHashiEventStrict(
               clientEvent,
-              PACKAGE_ID_SET,
+              packageIdSet,
             );
 
             if (parseResult.event) {
@@ -582,6 +585,8 @@ const eventRowStyle: React.CSSProperties = {
 // ---------------------------------------------------------------------------
 
 function ManualParsePanel() {
+  const { config } = useHashiConfig();
+  const manualPackageIdSet = new Set([config.packageId]);
   const [rawJson, setRawJson] = useState('');
   const [result, setResult] = useState<ParseHashiEventResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -645,7 +650,7 @@ function ManualParsePanel() {
         json: (obj['parsedJson'] as Record<string, unknown>) ?? null,
       };
 
-      const parseResult = parseHashiEventStrict(clientEvent, PACKAGE_ID_SET);
+      const parseResult = parseHashiEventStrict(clientEvent, manualPackageIdSet);
       setResult(parseResult);
     } catch (err) {
       setParseError(err instanceof Error ? err.message : String(err));

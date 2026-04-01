@@ -22,6 +22,7 @@ import { CertificatePanel } from './panels/CertificatePanel';
 import { GovernancePanel } from './panels/GovernancePanel';
 import { EventsPanel } from './panels/EventsPanel';
 import { BitcoinHelpersPanel } from './panels/BitcoinHelpersPanel';
+import { SettingsPanel } from './panels/SettingsPanel';
 import { PlaceholderPanel } from './panels/PlaceholderPanel';
 
 const queryClient = new QueryClient();
@@ -104,6 +105,10 @@ function AppContent() {
 
     if (activeHash === '#bitcoin-helpers') {
       return <BitcoinHelpersPanel />;
+    }
+
+    if (activeHash === '#settings') {
+      return <SettingsPanel />;
     }
 
     const title = PANEL_TITLES[activeHash];

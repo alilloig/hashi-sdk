@@ -740,6 +740,15 @@ The dashboard is hardcoded to Sui devnet:
 | Sui RPC | `https://fullnode.devnet.sui.io` |
 | Bitcoin Network | Testnet4 (`tb1p` prefix) |
 
+### After a Devnet Reset
+
+Sui devnet resets periodically, wiping all deployed objects. When this happens:
+
+1. Redeploy the Hashi Move package to devnet (or get the new IDs from the team)
+2. Go to **Settings** in the dashboard sidebar
+3. Paste the new **Package ID** and **Hashi Object ID**
+4. Click **Save Configuration** — changes take effect immediately (persisted in localStorage)
+
 ### Known Limitations
 
 - **Committee operations will fail** without proper validator/committee signing authority -- they're included to demonstrate the full SDK API surface.
