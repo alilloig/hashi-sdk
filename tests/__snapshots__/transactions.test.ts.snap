@@ -1,0 +1,681 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`cancelWithdrawal snapshot > produces correct PTB structure 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    },
+    {
+      "Pure": {
+        "bytes": "3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d0="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Object": {
+        "SharedObject": {
+          "objectId": "0x0000000000000000000000000000000000000000000000000000000000000006",
+          "initialSharedVersion": 1,
+          "mutable": false
+        },
+        "$kind": "SharedObject"
+      },
+      "$kind": "Object"
+    },
+    {
+      "Pure": {
+        "bytes": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    }
+  ],
+  "commands": [
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "withdraw",
+        "function": "cancel_withdrawal",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 2,
+            "type": "object",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "TransferObjects": {
+        "objects": [
+          {
+            "Result": 0,
+            "$kind": "Result"
+          }
+        ],
+        "address": {
+          "Input": 3,
+          "type": "pure",
+          "$kind": "Input"
+        }
+      },
+      "$kind": "TransferObjects"
+    }
+  ]
+}"
+`;
+
+exports[`createDepositRequest snapshot > produces correct PTB structure with derivation path 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "Pure": {
+        "bytes": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AQAAAA=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "kNADAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "Ae7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u"
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Object": {
+        "SharedObject": {
+          "objectId": "0x0000000000000000000000000000000000000000000000000000000000000006",
+          "initialSharedVersion": 1,
+          "mutable": false
+        },
+        "$kind": "SharedObject"
+      },
+      "$kind": "Object"
+    },
+    {
+      "Pure": {
+        "bytes": "AAAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    }
+  ],
+  "commands": [
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "utxo",
+        "function": "utxo_id",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "utxo",
+        "function": "utxo",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Result": 0,
+            "$kind": "Result"
+          },
+          {
+            "Input": 2,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 3,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "deposit_queue",
+        "function": "deposit_request",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Result": 1,
+            "$kind": "Result"
+          },
+          {
+            "Input": 4,
+            "type": "object",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "SplitCoins": {
+        "coin": {
+          "GasCoin": true,
+          "$kind": "GasCoin"
+        },
+        "amounts": [
+          {
+            "Input": 5,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "SplitCoins"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "deposit",
+        "function": "deposit",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 6,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Result": 2,
+            "$kind": "Result"
+          },
+          {
+            "Result": 3,
+            "$kind": "Result"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;
+
+exports[`createDepositRequest snapshot > produces correct PTB structure without derivation path 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "Pure": {
+        "bytes": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AAAAAA=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "oIYBAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AA=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Object": {
+        "SharedObject": {
+          "objectId": "0x0000000000000000000000000000000000000000000000000000000000000006",
+          "initialSharedVersion": 1,
+          "mutable": false
+        },
+        "$kind": "SharedObject"
+      },
+      "$kind": "Object"
+    },
+    {
+      "Pure": {
+        "bytes": "AAAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    }
+  ],
+  "commands": [
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "utxo",
+        "function": "utxo_id",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "utxo",
+        "function": "utxo",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Result": 0,
+            "$kind": "Result"
+          },
+          {
+            "Input": 2,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 3,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "deposit_queue",
+        "function": "deposit_request",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Result": 1,
+            "$kind": "Result"
+          },
+          {
+            "Input": 4,
+            "type": "object",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "SplitCoins": {
+        "coin": {
+          "GasCoin": true,
+          "$kind": "GasCoin"
+        },
+        "amounts": [
+          {
+            "Input": 5,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "SplitCoins"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "deposit",
+        "function": "deposit",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 6,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Result": 2,
+            "$kind": "Result"
+          },
+          {
+            "Result": 3,
+            "$kind": "Result"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;
+
+exports[`requestWithdrawal snapshot > produces correct PTB structure with 32-byte address 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    },
+    {
+      "Object": {
+        "SharedObject": {
+          "objectId": "0x0000000000000000000000000000000000000000000000000000000000000006",
+          "initialSharedVersion": 1,
+          "mutable": false
+        },
+        "$kind": "SharedObject"
+      },
+      "$kind": "Object"
+    },
+    {
+      "Pure": {
+        "bytes": "IM3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N"
+      },
+      "$kind": "Pure"
+    }
+  ],
+  "commands": [
+    {
+      "$Intent": {
+        "name": "CoinWithBalance",
+        "inputs": {},
+        "data": {
+          "type": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb::btc::BTC",
+          "balance": "__bigint__100000",
+          "outputKind": "coin"
+        }
+      },
+      "$kind": "$Intent"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "withdraw",
+        "function": "request_withdrawal",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Result": 0,
+            "$kind": "Result"
+          },
+          {
+            "Input": 2,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;
+
+exports[`requestWithdrawal snapshot > produces correct PTB structure with Uint8Array address 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    },
+    {
+      "Object": {
+        "SharedObject": {
+          "objectId": "0x0000000000000000000000000000000000000000000000000000000000000006",
+          "initialSharedVersion": 1,
+          "mutable": false
+        },
+        "$kind": "SharedObject"
+      },
+      "$kind": "Object"
+    },
+    {
+      "Pure": {
+        "bytes": "FKurq6urq6urq6urq6urq6urq6ur"
+      },
+      "$kind": "Pure"
+    }
+  ],
+  "commands": [
+    {
+      "$Intent": {
+        "name": "CoinWithBalance",
+        "inputs": {},
+        "data": {
+          "type": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb::btc::BTC",
+          "balance": "__bigint__50000",
+          "outputKind": "coin"
+        }
+      },
+      "$kind": "$Intent"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "withdraw",
+        "function": "request_withdrawal",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Result": 0,
+            "$kind": "Result"
+          },
+          {
+            "Input": 2,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;
+
+exports[`requestWithdrawal snapshot > produces correct PTB structure with hex string address 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    },
+    {
+      "Object": {
+        "SharedObject": {
+          "objectId": "0x0000000000000000000000000000000000000000000000000000000000000006",
+          "initialSharedVersion": 1,
+          "mutable": false
+        },
+        "$kind": "SharedObject"
+      },
+      "$kind": "Object"
+    },
+    {
+      "Pure": {
+        "bytes": "FKurq6urq6urq6urq6urq6urq6ur"
+      },
+      "$kind": "Pure"
+    }
+  ],
+  "commands": [
+    {
+      "$Intent": {
+        "name": "CoinWithBalance",
+        "inputs": {},
+        "data": {
+          "type": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb::btc::BTC",
+          "balance": "__bigint__50000",
+          "outputKind": "coin"
+        }
+      },
+      "$kind": "$Intent"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "withdraw",
+        "function": "request_withdrawal",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Result": 0,
+            "$kind": "Result"
+          },
+          {
+            "Input": 2,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;

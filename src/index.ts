@@ -53,6 +53,24 @@ export type {
 	WithdrawalCancelledEvent,
 } from './types/index.js';
 
+// Transaction builders
+export {
+	createDepositRequest,
+	requestWithdrawal,
+	cancelWithdrawal,
+	CLOCK_OBJECT_ID,
+	validateU64,
+	validateTxid,
+	validateAddress,
+	validateVout,
+	validateBitcoinAddress,
+} from './transactions/index.js';
+export type {
+	CreateDepositRequestParams,
+	RequestWithdrawalParams,
+	CancelWithdrawalParams,
+} from './transactions/index.js';
+
 // BCS re-exports
 export {
 	HashiBcs,
