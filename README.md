@@ -24,6 +24,7 @@ This SDK provides complete, signing-agnostic TypeScript bindings for every on-ch
 - [Package Upgrades](#package-upgrades)
 - [Error Handling](#error-handling)
 - [Type System](#type-system)
+- [Developer Dashboard](#developer-dashboard)
 - [Development](#development)
 - [Non-Goals](#non-goals)
 - [License](#license)
@@ -687,6 +688,64 @@ The SDK uses a **three-layer type model**:
 | `VecMap<K,V>` | `Array<{ key: K; value: V }>` | Preserves insertion order |
 | `VecSet<T>` | `T[]` | Unwrapped |
 | `ConfigValue` | Discriminated union | `{ type: 'U64' \| 'Address' \| ... ; value: ... }` |
+
+---
+
+## Developer Dashboard
+
+The SDK includes an interactive developer dashboard that showcases every operation. It's a React + Vite app targeting Sui devnet.
+
+### Quick Start
+
+```bash
+# Prerequisites: Node.js >= 18 and a Sui wallet browser extension (e.g., Sui Wallet)
+
+# 1. Build the SDK first (the dashboard consumes the local build)
+npm install
+npm run build
+
+# 2. Start the dashboard
+cd dashboard
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser.
+
+### Using the Dashboard
+
+1. **Connect your wallet** -- click "Connect Wallet" in the header and select your Sui wallet. Make sure it's set to **Sui Devnet**.
+
+2. **Get SUI tokens** -- go to **Faucets** and click "Request SUI from Devnet Faucet" to fund your wallet with devnet SUI for gas fees.
+
+3. **Get BTC tokens** -- click the BTC Testnet4 faucet link to get testnet Bitcoin (needed for deposit operations).
+
+4. **Explore operations** -- browse categories in the sidebar:
+   - **Queries** -- read on-chain bridge state, deposits, withdrawals, committee info, UTXOs
+   - **User Operations** -- create deposit requests, request/cancel withdrawals
+   - **Bitcoin Helpers** -- encode/decode Bitcoin addresses, convert sats/BTC
+   - **Events** -- subscribe to live bridge events or manually parse event JSON
+   - **Validator/Committee/Governance** -- all protocol operations (require committee authority)
+
+5. **Transaction flow** -- for any transaction operation: fill the form → click "Build" to inspect the transaction → click "Sign & Execute" to submit via your wallet.
+
+### Devnet Configuration
+
+The dashboard is hardcoded to Sui devnet:
+
+| Parameter | Value |
+|-----------|-------|
+| Hashi Package ID | `0xe87f0c85488c5c442612103a08e5df93d2f190cdb0456b667f5257be506aefc7` |
+| Hashi Object ID | `0x3b8013407b5caaceb9dbfce56c45987c8e778c2302fc712bd52db093f5997c04` |
+| Sui RPC | `https://fullnode.devnet.sui.io` |
+| Bitcoin Network | Testnet4 (`tb1p` prefix) |
+
+### Known Limitations
+
+- **Committee operations will fail** without proper validator/committee signing authority -- they're included to demonstrate the full SDK API surface.
+- **`deriveDepositAddress`** is not yet implemented in the SDK (stub only).
+- **Event subscription** uses polling (`queryEvents` every 5s) rather than WebSocket -- devnet may not have consistent event activity.
+- The dashboard consumes the SDK's built `dist/` output -- if you edit SDK source files, rebuild the SDK (`npm run build` in the repo root) before refreshing the dashboard.
 
 ---
 
