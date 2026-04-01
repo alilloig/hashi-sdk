@@ -71,6 +71,55 @@ export type {
 	CancelWithdrawalParams,
 } from './transactions/index.js';
 
+// Bitcoin helpers
+export {
+	encodeBitcoinAddress,
+	decodeBitcoinAddress,
+	satsToBtc,
+	btcToSats,
+	deriveDepositAddress,
+} from './bitcoin.js';
+export type { DecodedBitcoinAddress } from './bitcoin.js';
+
+// Event types and parsers
+export type {
+	HashiEvent,
+	EventUtxoId,
+	EventOutputUtxo,
+	EventUtxoInfo,
+	DepositRequestedEvent as DepositRequestedHashiEvent,
+	DepositConfirmedEvent as DepositConfirmedHashiEvent,
+	ExpiredDepositDeletedEvent as ExpiredDepositDeletedHashiEvent,
+	WithdrawalRequestedEvent as WithdrawalRequestedHashiEvent,
+	WithdrawalApprovedEvent as WithdrawalApprovedHashiEvent,
+	WithdrawalPickedForProcessingEvent as WithdrawalPickedForProcessingHashiEvent,
+	WithdrawalSignedEvent as WithdrawalSignedHashiEvent,
+	WithdrawalConfirmedEvent as WithdrawalConfirmedHashiEvent,
+	WithdrawalCancelledEvent as WithdrawalCancelledHashiEvent,
+	ValidatorRegisteredEvent as ValidatorRegisteredHashiEvent,
+	ValidatorUpdatedEvent as ValidatorUpdatedHashiEvent,
+	StartReconfigEvent as StartReconfigHashiEvent,
+	EndReconfigEvent as EndReconfigHashiEvent,
+	AbortReconfigEvent as AbortReconfigHashiEvent,
+	UtxoSpentEvent as UtxoSpentHashiEvent,
+	SpentUtxoDeletedEvent as SpentUtxoDeletedHashiEvent,
+	MintEvent as MintHashiEvent,
+	BurnEvent as BurnHashiEvent,
+	ProposalCreatedEvent as ProposalCreatedHashiEvent,
+	VoteCastEvent as VoteCastHashiEvent,
+	VoteRemovedEvent as VoteRemovedHashiEvent,
+	ProposalDeletedEvent as ProposalDeletedHashiEvent,
+	ProposalExecutedEvent as ProposalExecutedHashiEvent,
+	QuorumReachedEvent as QuorumReachedHashiEvent,
+	PackageUpgradedEvent as PackageUpgradedHashiEvent,
+	ParseHashiEventResult,
+} from './events/index.js';
+
+export {
+	parseHashiEvent,
+	parseHashiEventStrict,
+} from './events/index.js';
+
 // BCS re-exports
 export {
 	HashiBcs,
