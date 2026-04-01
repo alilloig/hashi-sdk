@@ -376,11 +376,11 @@ function RequestWithdrawalPanel() {
       result={renderTransactionResult(state)}
     >
       <div style={rowStyle}>
-        <span style={labelStyle}>Bitcoin address:</span>
+        <span style={labelStyle}>Bitcoin address (hex):</span>
         <input
           style={inputStyle}
           type="text"
-          placeholder="Hex bytes (20 or 32 bytes)"
+          placeholder="e.g. a1b2c3...64 hex chars for P2TR"
           value={bitcoinAddress}
           onChange={(e) => setBitcoinAddress(e.target.value)}
           disabled={state.phase !== 'idle'}
@@ -391,14 +391,15 @@ function RequestWithdrawalPanel() {
         <input
           style={smallInputStyle}
           type="text"
-          placeholder="100000"
+          placeholder="e.g. 100000"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           disabled={state.phase !== 'idle'}
         />
       </div>
       <div style={hintStyle}>
-        Bitcoin address should be hex-encoded bytes (e.g., 20 bytes for P2PKH/P2SH, 32 bytes for P2TR).
+        Hex-encoded witness program bytes (40 hex chars = 20 bytes for SegWit, 64 hex chars = 32 bytes for Taproot).
+        Use the <strong>Bitcoin Helpers</strong> panel to decode a tb1p/bc1 address into hex bytes.
       </div>
       <div style={{ ...rowStyle, marginTop: 12 }}>
         {state.phase === 'idle' && (
