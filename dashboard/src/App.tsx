@@ -20,6 +20,8 @@ import { CommitteeWithdrawalsPanel } from './panels/CommitteeWithdrawalsPanel';
 import { ReconfigPanel } from './panels/ReconfigPanel';
 import { CertificatePanel } from './panels/CertificatePanel';
 import { GovernancePanel } from './panels/GovernancePanel';
+import { EventsPanel } from './panels/EventsPanel';
+import { BitcoinHelpersPanel } from './panels/BitcoinHelpersPanel';
 import { PlaceholderPanel } from './panels/PlaceholderPanel';
 
 const queryClient = new QueryClient();
@@ -94,6 +96,14 @@ function AppContent() {
 
     if (activeHash === '#governance') {
       return <GovernancePanel />;
+    }
+
+    if (activeHash === '#events') {
+      return <EventsPanel />;
+    }
+
+    if (activeHash === '#bitcoin-helpers') {
+      return <BitcoinHelpersPanel />;
     }
 
     const title = PANEL_TITLES[activeHash];
