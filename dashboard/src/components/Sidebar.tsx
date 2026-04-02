@@ -109,5 +109,4 @@ const linkStyle: React.CSSProperties = {
 const activeLinkStyle: React.CSSProperties = {
   color: '#fff',
   backgroundColor: '#1a1a3e',
-  borderLeftColor: '#4488ff',
 };
