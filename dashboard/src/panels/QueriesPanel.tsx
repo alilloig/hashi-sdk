@@ -6,7 +6,9 @@
  */
 
 import { useState, useCallback } from 'react';
+import { SuiJsonRpcClient } from '@mysten/sui/jsonRpc';
 import { useHashiClient } from '../context/HashiClientContext';
+import { rpcUrl } from '../config';
 import { OperationPanel } from '../components/OperationPanel';
 import { JsonViewer } from '../components/JsonViewer';
 import { ErrorDisplay } from '../components/ErrorDisplay';
@@ -212,6 +214,15 @@ function GetDepositRequestPanel() {
     status: 'idle',
   });
 
+  // Digest lookup state
+  const [digestInput, setDigestInput] = useState('');
+  const [lookupState, setLookupState] = useState<
+    | { status: 'idle' }
+    | { status: 'loading' }
+    | { status: 'success'; requestId: string }
+    | { status: 'error'; message: string }
+  >({ status: 'idle' });
+
   const handleFetch = useCallback(async () => {
     if (!requestId.trim()) return;
     setState({ status: 'loading' });
@@ -223,12 +234,108 @@ function GetDepositRequestPanel() {
     }
   }, [client, requestId]);
 
+  const handleDigestLookup = useCallback(async () => {
+    const digest = digestInput.trim();
+    if (!digest) return;
+
+    setLookupState({ status: 'loading' });
+    try {
+      const rpcClient = new SuiJsonRpcClient({ network: 'devnet', url: rpcUrl });
+      const response = await rpcClient.getTransactionBlock({
+        digest,
+        options: { showEvents: true },
+      });
+
+      const events = response.events;
+      if (!events || events.length === 0) {
+        setLookupState({ status: 'error', message: 'No events found in this transaction.' });
+        return;
+      }
+
+      const depositEvent = events.find((evt) =>
+        evt.type.endsWith('::deposit::DepositRequestedEvent'),
+      );
+
+      if (!depositEvent) {
+        setLookupState({
+          status: 'error',
+          message: 'No DepositRequestedEvent found. This transaction may not be a deposit request.',
+        });
+        return;
+      }
+
+      const parsedJson = depositEvent.parsedJson as Record<string, unknown> | undefined;
+      const extractedId = parsedJson?.request_id;
+
+      if (typeof extractedId !== 'string') {
+        setLookupState({ status: 'error', message: 'DepositRequestedEvent found but request_id field is missing.' });
+        return;
+      }
+
+      setRequestId(extractedId);
+      setLookupState({ status: 'success', requestId: extractedId });
+    } catch (err) {
+      setLookupState({ status: 'error', message: err instanceof Error ? err.message : String(err) });
+    }
+  }, [digestInput]);
+
   return (
     <OperationPanel
       title="getDepositRequest"
-      description="Fetch a single deposit request by its object ID."
+      description="Fetch a single deposit request from the queue by its request ID."
       result={renderNullableResult(state, 'DepositRequest')}
     >
+      {/* Tip box */}
+      <div style={tipBoxStyle}>
+        <strong>Tip:</strong> The request ID is the <code>request_id</code> from
+        the <code>DepositRequestedEvent</code> in the transaction events — not the
+        created object ID shown in explorers. Use the lookup below to extract it
+        from a transaction digest.
+        <br />
+        <br />
+        <strong>Status:</strong> If found, the deposit is still <em>pending</em> (not
+        yet confirmed by the committee). &quot;Not found&quot; means it was either
+        confirmed (removed from queue) or the ID is incorrect.
+      </div>
+
+      {/* Digest lookup */}
+      <div style={lookupBoxStyle}>
+        <div style={{ fontSize: 13, color: '#aaa', marginBottom: 8 }}>
+          Lookup Request ID by Transaction Digest
+        </div>
+        <div style={rowStyle}>
+          <input
+            style={inputStyle}
+            type="text"
+            placeholder="Sui transaction digest"
+            value={digestInput}
+            onChange={(e) => setDigestInput(e.target.value)}
+          />
+          <button
+            onClick={handleDigestLookup}
+            disabled={lookupState.status === 'loading' || !digestInput.trim()}
+            style={
+              lookupState.status === 'loading' || !digestInput.trim()
+                ? disabledButtonStyle
+                : lookupButtonStyle
+            }
+          >
+            {lookupState.status === 'loading' ? 'Looking up...' : 'Lookup'}
+          </button>
+        </div>
+        {lookupState.status === 'success' && (
+          <div style={lookupSuccessStyle}>
+            Found request_id: <code>{lookupState.requestId}</code> — auto-filled below
+          </div>
+        )}
+        {lookupState.status === 'error' && (
+          <div style={{ fontSize: 12, color: '#cc6666', marginTop: 6 }}>
+            {lookupState.message}
+          </div>
+        )}
+      </div>
+
+      {/* Main fetch */}
       <div style={rowStyle}>
         <input
           style={inputStyle}
@@ -252,6 +359,41 @@ function GetDepositRequestPanel() {
     </OperationPanel>
   );
 }
+
+const tipBoxStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#aaa',
+  backgroundColor: '#1a2a1a',
+  border: '1px solid #336633',
+  borderRadius: 4,
+  padding: 12,
+  marginBottom: 12,
+  lineHeight: 1.5,
+};
+
+const lookupBoxStyle: React.CSSProperties = {
+  border: '1px solid #444',
+  borderRadius: 4,
+  padding: 12,
+  marginBottom: 12,
+  backgroundColor: '#111',
+};
+
+const lookupButtonStyle: React.CSSProperties = {
+  padding: '8px 16px',
+  fontSize: 13,
+  backgroundColor: '#226644',
+  color: '#fff',
+  border: 'none',
+  borderRadius: 4,
+  cursor: 'pointer',
+};
+
+const lookupSuccessStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#66cc66',
+  marginTop: 6,
+};
 
 // ---------------------------------------------------------------------------
 // 4. listDepositRequests (paginated)
