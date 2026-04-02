@@ -102,6 +102,7 @@ const linkStyle: React.CSSProperties = {
   textDecoration: 'none',
   fontSize: 13,
   borderLeft: '3px solid transparent',
+  outline: 'none',
   transition: 'background-color 0.15s, color 0.15s',
 };
 
