@@ -102,7 +102,16 @@ import {
 } from './transactions/governance-ops.js';
 
 // Query functions
-import { getHashiState, getConfig, getDepositFee } from './queries/state.js';
+import {
+	getHashiState,
+	getConfig,
+	getDepositFee,
+	getWithdrawalFeeBtc,
+	getWithdrawalMinimum,
+	getDepositMinimum,
+	getIsPaused,
+	getWithdrawalCancellationCooldownMs,
+} from './queries/state.js';
 import { getDepositRequest, listDepositRequests } from './queries/deposits.js';
 import { getWithdrawalRequest, listPendingWithdrawals } from './queries/withdrawals.js';
 import { getCommittee, getMemberInfo } from './queries/committee.js';
@@ -576,6 +585,64 @@ export class HashiClient {
 	 */
 	async getDepositFee(): Promise<bigint> {
 		return getDepositFee(this.client, this.config);
+	}
+
+	/**
+	 * Fetch the current withdrawal protocol fee (in satoshis).
+	 *
+	 * This fee is deducted from the user's BTC inside the Move contract
+	 * when calling `requestWithdrawal()`. Floored at 546 sats (dust minimum).
+	 *
+	 * @returns The withdrawal fee in satoshis.
+	 */
+	async getWithdrawalFeeBtc(): Promise<bigint> {
+		return getWithdrawalFeeBtc(this.client, this.config);
+	}
+
+	/**
+	 * Fetch the minimum withdrawal amount (in satoshis) accepted by the contract.
+	 *
+	 * Users must pass at least this amount when calling `requestWithdrawal()`.
+	 *
+	 * @returns The withdrawal minimum in satoshis.
+	 */
+	async getWithdrawalMinimum(): Promise<bigint> {
+		return getWithdrawalMinimum(this.client, this.config);
+	}
+
+	/**
+	 * Fetch the minimum deposit amount (in satoshis) accepted by the contract.
+	 *
+	 * Deposits below this threshold are rejected because the resulting UTXO
+	 * would cost more in fees to spend than it is worth.
+	 *
+	 * @returns The deposit minimum in satoshis (currently 546 — dust threshold).
+	 */
+	async getDepositMinimum(): Promise<bigint> {
+		return getDepositMinimum(this.client, this.config);
+	}
+
+	/**
+	 * Check whether the Hashi bridge is currently paused.
+	 *
+	 * When paused, most transaction builders will fail on-chain.
+	 *
+	 * @returns `true` if the bridge is paused.
+	 */
+	async getIsPaused(): Promise<boolean> {
+		return getIsPaused(this.client, this.config);
+	}
+
+	/**
+	 * Fetch the withdrawal cancellation cooldown (in milliseconds).
+	 *
+	 * After requesting a withdrawal, the user must wait at least this long
+	 * before they can cancel it.
+	 *
+	 * @returns The cooldown in milliseconds.
+	 */
+	async getWithdrawalCancellationCooldownMs(): Promise<bigint> {
+		return getWithdrawalCancellationCooldownMs(this.client, this.config);
 	}
 
 	/**

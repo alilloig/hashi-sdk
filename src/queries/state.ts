@@ -76,11 +76,156 @@ export async function getDepositFee(
 	config: HashiConfig,
 ): Promise<bigint> {
 	const cfg = await getConfig(client, config);
-	const entry = cfg.entries.find((e) => e.key === 'deposit_fee');
-	if (!entry || entry.value.type !== 'U64') {
-		return 0n;
+	return getConfigU64(cfg, 'deposit_fee', 0n);
+}
+
+/**
+ * Fetch the current withdrawal protocol fee (in satoshis) from on-chain config.
+ *
+ * This fee is deducted from the user's BTC coin inside the Move contract when
+ * calling `requestWithdrawal()`. The returned value is floored at
+ * `DUST_RELAY_MIN_VALUE` (546 sats), matching the contract behaviour.
+ *
+ * @throws HashiQueryError if the object cannot be fetched
+ * @throws HashiParseError if BCS deserialization fails
+ */
+export async function getWithdrawalFeeBtc(
+	client: CoreClient,
+	config: HashiConfig,
+): Promise<bigint> {
+	const cfg = await getConfig(client, config);
+	const raw = getConfigU64(cfg, 'withdrawal_fee_btc', DUST_RELAY_MIN_VALUE);
+	return raw > DUST_RELAY_MIN_VALUE ? raw : DUST_RELAY_MIN_VALUE;
+}
+
+/**
+ * Fetch the minimum withdrawal amount (in satoshis) accepted by the contract.
+ *
+ * Users must pass at least this amount when calling `requestWithdrawal()`.
+ * The value is computed from three on-chain config entries, replicating
+ * the Move contract's `config::withdrawal_minimum()` formula:
+ *
+ *   `withdrawal_fee_btc + worst_case_network_fee + DUST_RELAY_MIN_VALUE`
+ *
+ * @throws HashiQueryError if the object cannot be fetched
+ * @throws HashiParseError if BCS deserialization fails
+ */
+export async function getWithdrawalMinimum(
+	client: CoreClient,
+	config: HashiConfig,
+): Promise<bigint> {
+	const cfg = await getConfig(client, config);
+
+	const withdrawalFeeBtc = bigintMax(
+		getConfigU64(cfg, 'withdrawal_fee_btc', DUST_RELAY_MIN_VALUE),
+		DUST_RELAY_MIN_VALUE,
+	);
+	const maxFeeRate = bigintMax(
+		getConfigU64(cfg, 'max_fee_rate', MIN_RELAY_FEE_RATE),
+		MIN_RELAY_FEE_RATE,
+	);
+	const inputBudget = bigintMax(
+		getConfigU64(cfg, 'input_budget', 1n),
+		1n,
+	);
+
+	const txVbytes = TX_FIXED_VB + inputBudget * INPUT_VB + OUTPUT_BUDGET * OUTPUT_VB;
+	const worstCaseNetworkFee = maxFeeRate * txVbytes;
+
+	return withdrawalFeeBtc + worstCaseNetworkFee + DUST_RELAY_MIN_VALUE;
+}
+
+/**
+ * Fetch the minimum deposit amount (in satoshis) accepted by the contract.
+ *
+ * This is currently the dust relay minimum value (546 sats).
+ *
+ * @throws HashiQueryError if the object cannot be fetched
+ * @throws HashiParseError if BCS deserialization fails
+ */
+export async function getDepositMinimum(
+	client: CoreClient,
+	config: HashiConfig,
+): Promise<bigint> {
+	// The Move contract's deposit_minimum() is a constant (DUST_RELAY_MIN_VALUE).
+	// We still accept client/config for API consistency and future-proofing.
+	void client;
+	void config;
+	return DUST_RELAY_MIN_VALUE;
+}
+
+/**
+ * Check whether the Hashi bridge is currently paused.
+ *
+ * When paused, most transaction builders will fail on-chain with
+ * an `assert_unpaused` abort.
+ *
+ * @throws HashiQueryError if the object cannot be fetched
+ * @throws HashiParseError if BCS deserialization fails
+ */
+export async function getIsPaused(
+	client: CoreClient,
+	config: HashiConfig,
+): Promise<boolean> {
+	const cfg = await getConfig(client, config);
+	const entry = cfg.entries.find((e) => e.key === 'paused');
+	if (!entry || entry.value.type !== 'Bool') {
+		return false;
 	}
 	return entry.value.value;
+}
+
+/**
+ * Fetch the withdrawal cancellation cooldown (in milliseconds).
+ *
+ * After requesting a withdrawal, the user must wait at least this long
+ * before they can cancel it.
+ *
+ * @throws HashiQueryError if the object cannot be fetched
+ * @throws HashiParseError if BCS deserialization fails
+ */
+export async function getWithdrawalCancellationCooldownMs(
+	client: CoreClient,
+	config: HashiConfig,
+): Promise<bigint> {
+	const cfg = await getConfig(client, config);
+	return getConfigU64(cfg, 'withdrawal_cancellation_cooldown_ms', 0n);
+}
+
+// ---- Bitcoin fee-estimation constants (must match Move contract) ----
+
+/** Minimum value (sats) for a Bitcoin output to be relayed. Matches `config.move:DUST_RELAY_MIN_VALUE`. */
+export const DUST_RELAY_MIN_VALUE = 546n;
+
+/** Minimum relay fee rate (sat/vB). Matches `config.move:MIN_RELAY_FEE_RATE`. */
+const MIN_RELAY_FEE_RATE = 1n;
+
+/** Virtual bytes per 2-of-2 taproot script-path input. Matches `config.move:INPUT_VB`. */
+const INPUT_VB = 100n;
+
+/** Virtual bytes per P2TR output. Matches `config.move:OUTPUT_VB`. */
+const OUTPUT_VB = 43n;
+
+/** Number of outputs assumed per withdrawal (recipient + change). Matches `config.move:OUTPUT_BUDGET`. */
+const OUTPUT_BUDGET = 2n;
+
+/** Fixed virtual bytes overhead per Bitcoin transaction. Matches `config.move:TX_FIXED_VB`. */
+const TX_FIXED_VB = 11n;
+
+// ---- Internal helpers ----
+
+/** Extract a U64 config entry or return a default. */
+function getConfigU64(cfg: Config, key: string, defaultValue: bigint): bigint {
+	const entry = cfg.entries.find((e) => e.key === key);
+	if (!entry || entry.value.type !== 'U64') {
+		return defaultValue;
+	}
+	return entry.value.value;
+}
+
+/** Return the larger of two bigints. */
+function bigintMax(a: bigint, b: bigint): bigint {
+	return a > b ? a : b;
 }
 
 // ---- Internal conversion ----

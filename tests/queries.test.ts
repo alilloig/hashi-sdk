@@ -6,6 +6,13 @@ import { HashiQueryError, HashiParseError } from '../src/errors';
 import {
 	getHashiState,
 	getConfig,
+	getDepositFee,
+	getWithdrawalFeeBtc,
+	getWithdrawalMinimum,
+	getDepositMinimum,
+	getIsPaused,
+	getWithdrawalCancellationCooldownMs,
+	DUST_RELAY_MIN_VALUE,
 	getDepositRequest,
 	listDepositRequests,
 	getWithdrawalRequest,
@@ -45,7 +52,11 @@ function makeTestConfig(): HashiConfig {
 /**
  * Build a minimal valid Hashi BCS fixture.
  */
-function makeHashiStateBytes(): Uint8Array {
+function makeHashiStateBytes(configOverrides?: Array<{ key: string; value: any }>): Uint8Array {
+	const defaultConfig = [
+		{ key: 'min_deposit', value: { U64: 1000n } },
+		{ key: 'bridge_paused', value: { Bool: false } },
+	];
 	return HashiBcs.serialize({
 		id: TEST_ADDR_3,
 		committee_set: {
@@ -57,10 +68,7 @@ function makeHashiStateBytes(): Uint8Array {
 		},
 		config: {
 			config: {
-				contents: [
-					{ key: 'min_deposit', value: { U64: 1000n } },
-					{ key: 'bridge_paused', value: { Bool: false } },
-				],
+				contents: configOverrides ?? defaultConfig,
 			},
 			enabled_versions: { contents: [1n, 2n] },
 			upgrade_cap: {
@@ -88,6 +96,22 @@ function makeHashiStateBytes(): Uint8Array {
 		proposals: { id: '0x' + '0a'.repeat(32), size: 0n },
 		tob: { id: '0x' + '0b'.repeat(32), size: 0n },
 	}).toBytes();
+}
+
+/**
+ * Build a Hashi state fixture with realistic config entries matching the
+ * Move contract's `config::create()` defaults.
+ */
+function makeRealisticConfigBytes(): Uint8Array {
+	return makeHashiStateBytes([
+		{ key: 'paused', value: { Bool: false } },
+		{ key: 'deposit_fee', value: { U64: 1000n } },
+		{ key: 'withdrawal_fee_btc', value: { U64: 546n } },
+		{ key: 'max_fee_rate', value: { U64: 25n } },
+		{ key: 'input_budget', value: { U64: 10n } },
+		{ key: 'bitcoin_confirmation_threshold', value: { U64: 1n } },
+		{ key: 'withdrawal_cancellation_cooldown_ms', value: { U64: 3600000n } },
+	]);
 }
 
 function makeDepositRequestBytes(): Uint8Array {
@@ -835,5 +859,182 @@ describe('error handling', () => {
 		await expect(
 			getDepositRequest(client, config, TEST_ADDR_1),
 		).rejects.toThrow(HashiQueryError);
+	});
+});
+
+// ---- Config query helpers ----
+
+describe('config query helpers', () => {
+	function createConfigClient(configEntries: Array<{ key: string; value: any }>): CoreClient {
+		const bytes = makeHashiStateBytes(configEntries);
+		return createMockClient({ getObjectResult: bytes });
+	}
+
+	describe('getDepositFee', () => {
+		it('returns deposit_fee from config', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([
+				{ key: 'deposit_fee', value: { U64: 5000n } },
+			]);
+
+			const fee = await getDepositFee(client, config);
+			expect(fee).toBe(5000n);
+		});
+
+		it('returns 0n when deposit_fee is missing', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([]);
+
+			const fee = await getDepositFee(client, config);
+			expect(fee).toBe(0n);
+		});
+	});
+
+	describe('getWithdrawalFeeBtc', () => {
+		it('returns withdrawal_fee_btc from config', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([
+				{ key: 'withdrawal_fee_btc', value: { U64: 1000n } },
+			]);
+
+			const fee = await getWithdrawalFeeBtc(client, config);
+			expect(fee).toBe(1000n);
+		});
+
+		it('floors at DUST_RELAY_MIN_VALUE when config value is lower', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([
+				{ key: 'withdrawal_fee_btc', value: { U64: 100n } },
+			]);
+
+			const fee = await getWithdrawalFeeBtc(client, config);
+			expect(fee).toBe(DUST_RELAY_MIN_VALUE); // 546n
+		});
+
+		it('returns DUST_RELAY_MIN_VALUE when key is missing', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([]);
+
+			const fee = await getWithdrawalFeeBtc(client, config);
+			expect(fee).toBe(DUST_RELAY_MIN_VALUE);
+		});
+	});
+
+	describe('getWithdrawalMinimum', () => {
+		it('matches Move contract formula with default config', async () => {
+			const config = makeTestConfig();
+			const client = createMockClient({
+				getObjectResult: makeRealisticConfigBytes(),
+			});
+
+			const minimum = await getWithdrawalMinimum(client, config);
+
+			// Move formula: withdrawal_fee_btc + worst_case_network_fee + DUST_RELAY_MIN_VALUE
+			// withdrawal_fee_btc = max(546, 546) = 546
+			// max_fee_rate = max(25, 1) = 25
+			// input_budget = max(10, 1) = 10
+			// tx_vbytes = 11 + 10*100 + 2*43 = 11 + 1000 + 86 = 1097
+			// worst_case_network_fee = 25 * 1097 = 27425
+			// minimum = 546 + 27425 + 546 = 28517
+			expect(minimum).toBe(28517n);
+		});
+
+		it('applies floor values for each config entry', async () => {
+			const config = makeTestConfig();
+			// All values below floors
+			const client = createConfigClient([
+				{ key: 'withdrawal_fee_btc', value: { U64: 0n } },
+				{ key: 'max_fee_rate', value: { U64: 0n } },
+				{ key: 'input_budget', value: { U64: 0n } },
+			]);
+
+			const minimum = await getWithdrawalMinimum(client, config);
+
+			// withdrawal_fee_btc = max(0, 546) = 546
+			// max_fee_rate = max(0, 1) = 1
+			// input_budget = max(0, 1) = 1
+			// tx_vbytes = 11 + 1*100 + 2*43 = 197
+			// worst_case_network_fee = 1 * 197 = 197
+			// minimum = 546 + 197 + 546 = 1289
+			expect(minimum).toBe(1289n);
+		});
+
+		it('returns default-based minimum when all config keys missing', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([]);
+
+			const minimum = await getWithdrawalMinimum(client, config);
+
+			// All defaults: withdrawal_fee_btc=546, max_fee_rate=1, input_budget=1
+			// Same as above floor test: 1289
+			expect(minimum).toBe(1289n);
+		});
+	});
+
+	describe('getDepositMinimum', () => {
+		it('returns DUST_RELAY_MIN_VALUE', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([]);
+
+			const minimum = await getDepositMinimum(client, config);
+			expect(minimum).toBe(546n);
+			expect(minimum).toBe(DUST_RELAY_MIN_VALUE);
+		});
+	});
+
+	describe('getIsPaused', () => {
+		it('returns false when not paused', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([
+				{ key: 'paused', value: { Bool: false } },
+			]);
+
+			const paused = await getIsPaused(client, config);
+			expect(paused).toBe(false);
+		});
+
+		it('returns true when paused', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([
+				{ key: 'paused', value: { Bool: true } },
+			]);
+
+			const paused = await getIsPaused(client, config);
+			expect(paused).toBe(true);
+		});
+
+		it('returns false when key is missing', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([]);
+
+			const paused = await getIsPaused(client, config);
+			expect(paused).toBe(false);
+		});
+	});
+
+	describe('getWithdrawalCancellationCooldownMs', () => {
+		it('returns cooldown from config', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([
+				{ key: 'withdrawal_cancellation_cooldown_ms', value: { U64: 3600000n } },
+			]);
+
+			const cooldown = await getWithdrawalCancellationCooldownMs(client, config);
+			expect(cooldown).toBe(3600000n); // 1 hour
+		});
+
+		it('returns 0n when key is missing', async () => {
+			const config = makeTestConfig();
+			const client = createConfigClient([]);
+
+			const cooldown = await getWithdrawalCancellationCooldownMs(client, config);
+			expect(cooldown).toBe(0n);
+		});
+	});
+
+	describe('DUST_RELAY_MIN_VALUE constant', () => {
+		it('exports 546n matching Move contract', () => {
+			expect(DUST_RELAY_MIN_VALUE).toBe(546n);
+		});
 	});
 });

@@ -1,5 +1,15 @@
 // State queries
-export { getHashiState, getConfig, getDepositFee } from './state.js';
+export {
+	getHashiState,
+	getConfig,
+	getDepositFee,
+	getWithdrawalFeeBtc,
+	getWithdrawalMinimum,
+	getDepositMinimum,
+	getIsPaused,
+	getWithdrawalCancellationCooldownMs,
+	DUST_RELAY_MIN_VALUE,
+} from './state.js';
 
 // Deposit queries
 export { getDepositRequest, listDepositRequests } from './deposits.js';
