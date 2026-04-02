@@ -1,0 +1,14 @@
+{
+	"$schema": "https://typedoc.org/schema.json",
+	"entryPoints": ["src/index.ts"],
+	"out": "docs",
+	"exclude": ["src/contracts/**"],
+	"tsconfig": "tsconfig.json",
+	"name": "hashi-sdk",
+	"readme": "README.md",
+	"includeVersion": true,
+	"excludePrivate": true,
+	"excludeProtected": true,
+	"excludeInternal": true,
+	"sort": ["kind", "alphabetical"]
+}

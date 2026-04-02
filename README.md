@@ -407,6 +407,27 @@ btcToSats('1.5');           // 150_000_000n
 btcToSats('0.00000001');    // 1n
 ```
 
+### Deposit Address Derivation
+
+Derive the unique P2TR Bitcoin deposit address for a given Sui recipient. This is a pure-crypto operation (HKDF-SHA3-256 tweak + secp256k1 point addition) with no network calls.
+
+```ts
+import { deriveDepositAddress, arkworksToCompressedHex } from 'hashi-sdk/bitcoin';
+
+// If the MPC public key is in ark-works format (from on-chain), convert first:
+const compressedHex = arkworksToCompressedHex(onChainMpcKeyBytes);
+
+// Derive the deposit address
+const depositAddr = deriveDepositAddress(
+  compressedHex,                          // 33-byte compressed secp256k1 key (02/03 prefix)
+  '0xabc123...your_sui_address',          // recipient Sui address
+  'testnet',                              // 'mainnet' or 'testnet'
+);
+// => "tb1p..." (P2TR script-path address)
+```
+
+The function accepts the MPC public key as either a hex string or `Uint8Array`. The `network` parameter controls the bech32m HRP (`bc` for mainnet, `tb` for testnet/signet).
+
 ---
 
 ## Validator Operations
@@ -718,7 +739,7 @@ Open `http://localhost:5173` in your browser.
 
 2. **Get SUI tokens** -- go to **Faucets** and click "Request SUI from Devnet Faucet" to fund your wallet with devnet SUI for gas fees.
 
-3. **Get BTC tokens** -- click the BTC Testnet4 faucet link to get testnet Bitcoin (needed for deposit operations).
+3. **Get BTC tokens** -- click the BTC Signet faucet link to get testnet Bitcoin (needed for deposit operations).
 
 4. **Explore operations** -- browse categories in the sidebar:
    - **Queries** -- read on-chain bridge state, deposits, withdrawals, committee info, UTXOs
@@ -738,7 +759,7 @@ The dashboard is hardcoded to Sui devnet:
 | Hashi Package ID | `0xe87f0c85488c5c442612103a08e5df93d2f190cdb0456b667f5257be506aefc7` |
 | Hashi Object ID | `0x3b8013407b5caaceb9dbfce56c45987c8e778c2302fc712bd52db093f5997c04` |
 | Sui RPC | `https://fullnode.devnet.sui.io` |
-| Bitcoin Network | Testnet4 (`tb1p` prefix) |
+| Bitcoin Network | Signet (`tb1p` prefix) |
 
 ### After a Devnet Reset
 
@@ -752,7 +773,6 @@ Sui devnet resets periodically, wiping all deployed objects. When this happens:
 ### Known Limitations
 
 - **Committee operations will fail** without proper validator/committee signing authority -- they're included to demonstrate the full SDK API surface.
-- **`deriveDepositAddress`** is not yet implemented in the SDK (stub only).
 - **Event subscription** uses polling (`queryEvents` every 5s) rather than WebSocket -- devnet may not have consistent event activity.
 - The dashboard consumes the SDK's built `dist/` output -- if you edit SDK source files, rebuild the SDK (`npm run build` in the repo root) before refreshing the dashboard.
 

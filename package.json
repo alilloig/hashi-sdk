@@ -57,7 +57,9 @@
 		"codegen": "npx sui-ts-codegen generate",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"docs": "typedoc",
+		"docs:watch": "typedoc --watch"
 	},
 	"peerDependencies": {
 		"@mysten/sui": ">=2.0.0"
@@ -75,6 +77,7 @@
 		"@typescript-eslint/parser": "^8.0.0",
 		"esbuild": "^0.25.0",
 		"eslint": "^9.0.0",
+		"typedoc": "^0.28.18",
 		"typescript": "^5.7.0",
 		"vitest": "^3.0.0"
 	}
