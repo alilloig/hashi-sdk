@@ -64,5 +64,5 @@ export const rpcUrl = 'https://fullnode.devnet.sui.io';
 /** Sui devnet faucet URL. */
 export const faucetUrl = 'https://faucet.devnet.sui.io';
 
-/** Bitcoin Testnet4 faucet (external link). */
-export const btcFaucetLink = 'https://mempool.space/testnet4/faucet';
+/** Bitcoin Signet faucet (external link). */
+export const btcFaucetLink = 'https://signet257.bublina.eu.org/';

@@ -1,5 +1,5 @@
 /**
- * FaucetsPanel: SUI devnet faucet button and BTC testnet4 faucet link.
+ * FaucetsPanel: SUI devnet faucet button and BTC signet faucet link.
  *
  * The SUI faucet uses requestSuiFromFaucetV2 from @mysten/sui/faucet.
  * The BTC faucet is an external link that opens in a new tab.
