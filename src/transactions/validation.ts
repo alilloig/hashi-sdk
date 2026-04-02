@@ -12,6 +12,28 @@ import { normalizeSuiAddress } from '../utils/config.js';
 const U64_MAX = 18446744073709551615n;
 
 /**
+ * Reverse the byte order of a 64-character hex-encoded Bitcoin txid.
+ *
+ * Bitcoin txids are displayed in reversed byte order relative to the
+ * internal hash. This function converts between the two representations.
+ * The conversion is symmetric: applying it twice returns the original.
+ *
+ * @param hex - A 64-char hex string (with or without 0x prefix).
+ * @returns The byte-reversed hex string WITHOUT 0x prefix.
+ * @throws HashiTransactionError if the input is not exactly 64 hex chars.
+ */
+export function reverseTxidBytes(hex: string): string {
+	const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
+	const bytes = clean.match(/.{2}/g);
+	if (!bytes || bytes.length !== 32) {
+		throw new HashiTransactionError(
+			`Cannot reverse txid bytes: expected 64 hex chars, got ${clean.length}`,
+		);
+	}
+	return bytes.reverse().join('');
+}
+
+/**
  * Validate and normalize a value as a u64-compatible bigint.
  *
  * Accepts bigint or number (must be a safe integer).
@@ -90,7 +112,11 @@ export function validateTxid(txid: string): string {
 		);
 	}
 
-	return normalizeSuiAddress(txid);
+	// Reverse from display byte order to internal byte order.
+	// Bitcoin txids are displayed with reversed bytes relative to the
+	// internal SHA-256d hash. The Move contract expects internal order.
+	const reversed = reverseTxidBytes(hex);
+	return normalizeSuiAddress('0x' + reversed);
 }
 
 /**

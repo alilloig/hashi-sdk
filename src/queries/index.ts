@@ -1,5 +1,5 @@
 // State queries
-export { getHashiState, getConfig } from './state.js';
+export { getHashiState, getConfig, getDepositFee } from './state.js';
 
 // Deposit queries
 export { getDepositRequest, listDepositRequests } from './deposits.js';

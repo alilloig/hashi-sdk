@@ -62,6 +62,27 @@ export async function getConfig(
 	};
 }
 
+/**
+ * Fetch the current deposit fee from the Hashi on-chain config.
+ *
+ * Returns the fee in MIST (SUI base units). Pass this value as the
+ * `depositFee` parameter to `createDepositRequest()`.
+ *
+ * @throws HashiQueryError if the object cannot be fetched
+ * @throws HashiParseError if BCS deserialization fails
+ */
+export async function getDepositFee(
+	client: CoreClient,
+	config: HashiConfig,
+): Promise<bigint> {
+	const cfg = await getConfig(client, config);
+	const entry = cfg.entries.find((e) => e.key === 'deposit_fee');
+	if (!entry || entry.value.type !== 'U64') {
+		return 0n;
+	}
+	return entry.value.value;
+}
+
 // ---- Internal conversion ----
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

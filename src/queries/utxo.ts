@@ -15,6 +15,7 @@ import {
 	toBigInt,
 } from './helpers.js';
 import { getHashiState } from './state.js';
+import { reverseTxidBytes } from '../transactions/validation.js';
 
 /**
  * Fetch a UTXO from the active UTXO pool by its transaction ID and output index.
@@ -36,8 +37,12 @@ export async function getUtxo(
 	const state = await getHashiState(client, config);
 	const bagId = state.utxoPool.activeUtxos.id;
 
+	// Reverse txid from display to internal byte order before serialization,
+	// since on-chain UtxoId stores txid in internal byte order.
+	const internalTxid = '0x' + reverseTxidBytes(txid);
+
 	// Serialize the UtxoId struct as the dynamic field key.
-	const utxoIdBcsBytes = UtxoIdBcs.serialize({ txid, vout }).toBytes();
+	const utxoIdBcsBytes = UtxoIdBcs.serialize({ txid: internalTxid, vout }).toBytes();
 
 	// The key type is the full Move struct type path.
 	const keyType = `${config.originalPackageId}::utxo::UtxoId`;
@@ -64,7 +69,7 @@ export async function getUtxo(
 function convertUtxo(raw: any): Utxo {
 	return {
 		id: {
-			txid: raw.id.txid,
+			txid: '0x' + reverseTxidBytes(raw.id.txid),
 			vout: raw.id.vout,
 		},
 		amount: toBigInt(raw.amount),

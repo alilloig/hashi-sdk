@@ -116,6 +116,7 @@ export {
 	validateSignersBitmap,
 	validateNoDuplicates,
 	validateNonEmpty,
+	reverseTxidBytes,
 } from './transactions/index.js';
 export type {
 	// User operation params
@@ -170,6 +171,7 @@ export {
 	satsToBtc,
 	btcToSats,
 	deriveDepositAddress,
+	arkworksToCompressedHex,
 } from './bitcoin.js';
 export type { DecodedBitcoinAddress } from './bitcoin.js';
 
@@ -216,6 +218,7 @@ export {
 export {
 	getHashiState,
 	getConfig,
+	getDepositFee,
 	getDepositRequest,
 	listDepositRequests,
 	getWithdrawalRequest,

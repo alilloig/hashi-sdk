@@ -113,4 +113,5 @@ export {
 	validateSignersBitmap,
 	validateNoDuplicates,
 	validateNonEmpty,
+	reverseTxidBytes,
 } from './validation.js';

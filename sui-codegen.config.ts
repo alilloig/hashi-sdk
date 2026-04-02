@@ -5,7 +5,7 @@ const config: SuiCodegenConfig = {
 	packages: [
 		{
 			package: 'hashi',
-			path: '../hashi/worktrees/alilloig/sdk/packages/hashi',
+			path: '../hashi/packages/hashi',
 		},
 	],
 };

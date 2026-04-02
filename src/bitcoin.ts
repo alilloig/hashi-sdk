@@ -8,6 +8,11 @@
  * and does NOT import @mysten/sui.
  */
 
+import { schnorr } from '@noble/curves/secp256k1';
+import { bytesToNumberBE, concatBytes, hexToBytes, numberToBytesBE } from '@noble/curves/abstract/utils';
+import { sha256 } from '@noble/hashes/sha2';
+import { sha3_256 } from '@noble/hashes/sha3';
+import { hkdf } from '@noble/hashes/hkdf';
 import { bech32, bech32m } from '@scure/base';
 import { HashiBitcoinError } from './errors.js';
 
@@ -249,18 +254,217 @@ export function btcToSats(btc: string): bigint {
 	return wholeValue * SATS_PER_BTC + fracValue;
 }
 
-// ---- Deposit Address Derivation (Stub) ----
+// ---- Deposit Address Derivation ----
+
+// secp256k1 group order
+const SECP256K1_N = BigInt('0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141');
+
+// secp256k1 field prime
+const SECP256K1_P = BigInt('0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f');
+
+// BIP-341 NUMS (Nothing-Up-My-Sleeve) internal key — no known private key
+const NUMS_X = BigInt('0x50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0');
 
 /**
- * Derive a deposit address from MPC public key and derivation path.
+ * Convert a 33-byte ark-works compressed secp256k1 point to standard Bitcoin
+ * compressed format (02/03 prefix + 32-byte big-endian x).
  *
- * @throws Always throws "Not yet implemented" — pending determination of the
- *   exact derivation algorithm from the Rust source (Q-DERIVE).
+ * ark-works format: 32 bytes x (little-endian) + 1 flag byte
+ *
+ * ark-works uses "positive/negative" Y convention:
+ *   flag 0x00 = "positive" Y  (y <= (p-1)/2)
+ *   flag 0x80 = "negative" Y  (y > (p-1)/2)
+ *
+ * Bitcoin uses even/odd Y convention:
+ *   02 prefix = even Y  (y % 2 == 0)
+ *   03 prefix = odd Y   (y % 2 == 1)
+ *
+ * These are NOT the same — we must recover the actual Y to determine even/odd.
+ *
+ * @param arkBytes - 33-byte ark-works compressed point
+ * @returns Hex string with 02/03 prefix + 32-byte big-endian x
+ */
+export function arkworksToCompressedHex(arkBytes: Uint8Array | number[]): string {
+	const bytes = arkBytes instanceof Uint8Array ? arkBytes : new Uint8Array(arkBytes);
+	if (bytes.length !== 33) {
+		throw new HashiBitcoinError(`Expected 33-byte ark-works point, got ${bytes.length}`);
+	}
+
+	// x is stored as 32 bytes little-endian, flag byte at index 32
+	const xLE = bytes.slice(0, 32);
+	const flag = bytes[32];
+	const xBE = new Uint8Array(xLE).reverse();
+	const xHex = Array.from(xBE).map(b => b.toString(16).padStart(2, '0')).join('');
+
+	const x = BigInt('0x' + xHex);
+	const isArkPositive = (flag & 0x80) === 0; // 0x00 = positive (y <= (p-1)/2)
+
+	const halfP = (SECP256K1_P - 1n) / 2n;
+
+	// Recover Y from x: y^2 = x^3 + 7 mod p
+	const x3 = modPow(x, 3n, SECP256K1_P);
+	const y2 = (x3 + 7n) % SECP256K1_P;
+	const y = modPow(y2, (SECP256K1_P + 1n) / 4n, SECP256K1_P); // sqrt via p ≡ 3 mod 4
+
+	// Pick the Y that matches the ark-works flag
+	const yPositive = y <= halfP ? y : SECP256K1_P - y;
+	const actualY = isArkPositive ? yPositive : SECP256K1_P - yPositive;
+
+	// Bitcoin prefix from even/odd
+	const prefix = actualY % 2n === 0n ? '02' : '03';
+	return prefix + xHex;
+}
+
+/**
+ * Derive a Bitcoin taproot deposit address from the committee's MPC public
+ * key and a recipient Sui address.
+ *
+ * Algorithm (ports the Rust implementation):
+ *   1. tweak = HKDF-SHA3-256(ikm = x(mpcKey) || suiAddress, salt = [], info = [], len = 64)
+ *   2. scalar = tweak mod n  (secp256k1 group order)
+ *   3. derivedPoint = mpcKey + scalar * G
+ *   4. xOnly = x-coordinate of derivedPoint
+ *   5. address = P2TR script-path using NUMS internal key + <xOnly> OP_CHECKSIG leaf
+ *
+ * @param mpcPublicKey - 33-byte compressed secp256k1 public key (standard 02/03 prefix, big-endian x).
+ *   If the MPC key is in ark-works format (from on-chain), convert it first with `arkworksToCompressedHex`.
+ * @param suiAddress - 32-byte Sui address (hex, with or without 0x prefix)
+ * @param network - 'mainnet' or 'testnet'
+ * @returns Bitcoin P2TR address string
+ *
+ * @throws {HashiBitcoinError} If inputs are invalid
  */
 export function deriveDepositAddress(
-	_mpcPublicKey: Uint8Array,
-	_derivationPath: string,
-	_network: 'mainnet' | 'testnet',
-): never {
-	throw new HashiBitcoinError('deriveDepositAddress is not yet implemented (Q-DERIVE)');
+	mpcPublicKey: Uint8Array | string,
+	suiAddress: string,
+	network: 'mainnet' | 'testnet',
+): string {
+	// 1. Parse the MPC public key (33-byte compressed) into a curve point
+	const mpcHex = typeof mpcPublicKey === 'string' ? mpcPublicKey : bytesToHex(mpcPublicKey);
+	const mpcPoint = schnorr.utils.lift_x(
+		bytesToNumberBE(hexToBytes(mpcHex.replace(/^0x/, '').slice(2))),
+	);
+
+	// Determine correct Y parity from the 02/03 prefix
+	const prefix = mpcHex.replace(/^0x/, '').slice(0, 2);
+	const mpcAffine = mpcPoint.toAffine();
+	const needNegate = (prefix === '02' && mpcAffine.y % 2n !== 0n)
+		|| (prefix === '03' && mpcAffine.y % 2n === 0n);
+	const finalMpcPoint = needNegate ? mpcPoint.negate() : mpcPoint;
+
+	// 2. Extract x-coordinate as 32 bytes big-endian
+	const xBytes = numberToBytesBE(finalMpcPoint.toAffine().x, 32);
+
+	// 3. Parse the Sui address (remove 0x prefix if present)
+	const addrHex = suiAddress.startsWith('0x') ? suiAddress.slice(2) : suiAddress;
+	const addrBytes = hexToBytes(addrHex.padStart(64, '0'));
+
+	// 4. Compute tweak via HKDF-SHA3-256
+	//    ikm = x_bytes || sui_address (64 bytes), salt = empty, info = empty, output = 64 bytes
+	const ikm = concatBytes(xBytes, addrBytes);
+	const tweakBytes = hkdf(sha3_256, ikm, new Uint8Array(0), new Uint8Array(0), 64);
+
+	// 5. Reduce 64 bytes mod group order to get scalar
+	const tweakScalar = bytesToNumberBE(tweakBytes) % SECP256K1_N;
+
+	// 6. Derive new point: mpcKey + tweakScalar * G
+	const GPoint = schnorr.utils.lift_x(
+		bytesToNumberBE(hexToBytes('79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798')),
+	);
+	const tweakPoint = GPoint.multiply(tweakScalar);
+	const derivedPoint = finalMpcPoint.add(tweakPoint);
+
+	// 7. Get x-only representation (32 bytes)
+	const xOnly = numberToBytesBE(derivedPoint.toAffine().x, 32);
+
+	// 8. Build P2TR address with script-path spending
+	return buildTaprootScriptPathAddress(xOnly, network);
+}
+
+/**
+ * Build a P2TR address using script-path spending with a single
+ * <pubkey> OP_CHECKSIG leaf and a NUMS internal key.
+ */
+function buildTaprootScriptPathAddress(
+	xOnlyPubkey: Uint8Array,
+	network: 'mainnet' | 'testnet',
+): string {
+	// Build the leaf script: <xOnlyPubkey> OP_CHECKSIG
+	const leafScript = concatBytes(
+		Uint8Array.of(0x20), // push 32 bytes
+		xOnlyPubkey,
+		Uint8Array.of(0xac), // OP_CHECKSIG
+	);
+
+	// Compute the leaf hash: tagged_hash("TapLeaf", [leafVersion, compactSize(script), script])
+	const leafVersion = 0xc0;
+	const scriptLen = compactSize(leafScript.length);
+	const leafData = concatBytes(Uint8Array.of(leafVersion), scriptLen, leafScript);
+	const leafHash = taggedHash('TapLeaf', leafData);
+
+	// For a single-leaf tree, the merkle root IS the leaf hash
+	const merkleRoot = leafHash;
+
+	// Internal key is NUMS point (x-only, 32 bytes)
+	const internalKey = numberToBytesBE(NUMS_X, 32);
+
+	// Compute the tweak: t = tagged_hash("TapTweak", internal_key || merkle_root)
+	const tweakHash = taggedHash('TapTweak', concatBytes(internalKey, merkleRoot));
+	const t = bytesToNumberBE(tweakHash) % SECP256K1_N;
+
+	// Compute output key: P = lift_x(internal_key) + t*G
+	const internalPoint = schnorr.utils.lift_x(NUMS_X);
+	const GPoint = schnorr.utils.lift_x(
+		bytesToNumberBE(hexToBytes('79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798')),
+	);
+	const tPoint = GPoint.multiply(t);
+	const outputPoint = internalPoint.add(tPoint);
+	const outputAffine = outputPoint.toAffine();
+
+	// The output key x-coordinate (32 bytes)
+	const outputKey = numberToBytesBE(outputAffine.x, 32);
+
+	// Encode as bech32m: witness version 1 + 32-byte output key
+	const hrp = network === 'mainnet' ? MAINNET_HRP : TESTNET_HRP;
+	const words = [1, ...bech32m.toWords(outputKey)];
+	return bech32m.encode(hrp, words);
+}
+
+// ---- Internal Helpers ----
+
+/** Modular exponentiation: base^exp mod m */
+function modPow(base: bigint, exp: bigint, m: bigint): bigint {
+	let result = 1n;
+	base = base % m;
+	while (exp > 0n) {
+		if (exp % 2n === 1n) result = (result * base) % m;
+		exp = exp / 2n;
+		base = (base * base) % m;
+	}
+	return result;
+}
+
+/** BIP-340/341 tagged hash: SHA256(SHA256(tag) || SHA256(tag) || data) */
+function taggedHash(tag: string, data: Uint8Array): Uint8Array {
+	const tagBytes = new TextEncoder().encode(tag);
+	const tagHash = sha256(tagBytes);
+	return sha256(concatBytes(tagHash, tagHash, data));
+}
+
+/** Bitcoin compact size encoding */
+function compactSize(n: number): Uint8Array {
+	if (n < 0xfd) return Uint8Array.of(n);
+	if (n <= 0xffff) {
+		const buf = new Uint8Array(3);
+		buf[0] = 0xfd;
+		buf[1] = n & 0xff;
+		buf[2] = (n >> 8) & 0xff;
+		return buf;
+	}
+	throw new HashiBitcoinError('compactSize too large');
+}
+
+/** Convert bytes to hex string. */
+function bytesToHex(bytes: Uint8Array): string {
+	return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }

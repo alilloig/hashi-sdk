@@ -14,6 +14,7 @@ import type { SuiClientTypes } from '@mysten/sui/client';
 
 import { HashiParseError } from '../errors.js';
 import type { HashiEvent } from './types.js';
+import { reverseTxidBytes } from '../transactions/validation.js';
 
 // ---- BCS imports from codegen ----
 
@@ -116,6 +117,11 @@ function bytesToHexDigest(arr: number[]): string {
 		.join('');
 }
 
+/** Convert an on-chain txid (internal byte order) to display byte order. */
+function displayTxid(internalTxid: string): string {
+	return '0x' + reverseTxidBytes(internalTxid);
+}
+
 // ---- Core parsing logic ----
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -139,7 +145,7 @@ registerEvent('deposit', 'DepositRequestedEvent', (bcsBytes) => {
 		type: 'DepositRequested',
 		requestId: raw.request_id as string,
 		utxoId: {
-			txid: (raw.utxo_id as any).txid as string,
+			txid: displayTxid((raw.utxo_id as any).txid as string),
 			vout: (raw.utxo_id as any).vout as number,
 		},
 		amount: BigInt(raw.amount),
@@ -156,7 +162,7 @@ registerEvent('deposit', 'DepositConfirmedEvent', (bcsBytes) => {
 		type: 'DepositConfirmed',
 		requestId: raw.request_id as string,
 		utxoId: {
-			txid: (raw.utxo_id as any).txid as string,
+			txid: displayTxid((raw.utxo_id as any).txid as string),
 			vout: (raw.utxo_id as any).vout as number,
 		},
 		amount: BigInt(raw.amount),
@@ -200,11 +206,11 @@ registerEvent('withdrawal_queue', 'WithdrawalPickedForProcessingEvent', (bcsByte
 	return {
 		type: 'WithdrawalPickedForProcessing',
 		pendingId: raw.pending_id as string,
-		txid: raw.txid as string,
+		txid: displayTxid(raw.txid as string),
 		requestIds: raw.request_ids as string[],
 		inputs: (raw.inputs as any[]).map((inp: any) => ({
 			id: {
-				txid: inp.id.txid as string,
+				txid: displayTxid(inp.id.txid as string),
 				vout: inp.id.vout as number,
 			},
 			amount: BigInt(inp.amount),
@@ -240,10 +246,10 @@ registerEvent('withdrawal_queue', 'WithdrawalConfirmedEvent', (bcsBytes) => {
 	return {
 		type: 'WithdrawalConfirmed',
 		pendingId: raw.pending_id as string,
-		txid: raw.txid as string,
+		txid: displayTxid(raw.txid as string),
 		changeUtxoId: raw.change_utxo_id
 			? {
-					txid: (raw.change_utxo_id as any).txid as string,
+					txid: displayTxid((raw.change_utxo_id as any).txid as string),
 					vout: (raw.change_utxo_id as any).vout as number,
 				}
 			: null,
@@ -316,7 +322,7 @@ registerEvent('utxo_pool', 'UtxoSpentEvent', (bcsBytes) => {
 	return {
 		type: 'UtxoSpent',
 		utxoId: {
-			txid: (raw.utxo_id as any).txid as string,
+			txid: displayTxid((raw.utxo_id as any).txid as string),
 			vout: (raw.utxo_id as any).vout as number,
 		},
 		spentEpoch: BigInt(raw.spent_epoch),
@@ -328,7 +334,7 @@ registerEvent('utxo_pool', 'SpentUtxoDeletedEvent', (bcsBytes) => {
 	return {
 		type: 'SpentUtxoDeleted',
 		utxoId: {
-			txid: (raw.utxo_id as any).txid as string,
+			txid: displayTxid((raw.utxo_id as any).txid as string),
 			vout: (raw.utxo_id as any).vout as number,
 		},
 	};

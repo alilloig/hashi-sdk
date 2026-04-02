@@ -260,6 +260,177 @@ exports[`createDepositRequest snapshot > produces correct PTB structure with der
 }"
 `;
 
+exports[`createDepositRequest snapshot > produces correct PTB structure with explicit depositFee 1`] = `
+"{
+  "version": 2,
+  "sender": null,
+  "expiration": null,
+  "gasData": {
+    "budget": null,
+    "price": null,
+    "owner": null,
+    "payment": null
+  },
+  "inputs": [
+    {
+      "Pure": {
+        "bytes": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AAAAAA=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "oIYBAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Pure": {
+        "bytes": "AA=="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "Object": {
+        "SharedObject": {
+          "objectId": "0x0000000000000000000000000000000000000000000000000000000000000006",
+          "initialSharedVersion": 1,
+          "mutable": false
+        },
+        "$kind": "SharedObject"
+      },
+      "$kind": "Object"
+    },
+    {
+      "Pure": {
+        "bytes": "QEtMAAAAAAA="
+      },
+      "$kind": "Pure"
+    },
+    {
+      "UnresolvedObject": {
+        "objectId": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "$kind": "UnresolvedObject"
+    }
+  ],
+  "commands": [
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "utxo",
+        "function": "utxo_id",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 0,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 1,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "utxo",
+        "function": "utxo",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Result": 0,
+            "$kind": "Result"
+          },
+          {
+            "Input": 2,
+            "type": "pure",
+            "$kind": "Input"
+          },
+          {
+            "Input": 3,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "deposit_queue",
+        "function": "deposit_request",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Result": 1,
+            "$kind": "Result"
+          },
+          {
+            "Input": 4,
+            "type": "object",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    },
+    {
+      "SplitCoins": {
+        "coin": {
+          "GasCoin": true,
+          "$kind": "GasCoin"
+        },
+        "amounts": [
+          {
+            "Input": 5,
+            "type": "pure",
+            "$kind": "Input"
+          }
+        ]
+      },
+      "$kind": "SplitCoins"
+    },
+    {
+      "MoveCall": {
+        "package": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "module": "deposit",
+        "function": "deposit",
+        "typeArguments": [],
+        "arguments": [
+          {
+            "Input": 6,
+            "type": "object",
+            "$kind": "Input"
+          },
+          {
+            "Result": 2,
+            "$kind": "Result"
+          },
+          {
+            "Result": 3,
+            "$kind": "Result"
+          }
+        ]
+      },
+      "$kind": "MoveCall"
+    }
+  ]
+}"
+`;
+
 exports[`createDepositRequest snapshot > produces correct PTB structure without derivation path 1`] = `
 "{
   "version": 2,

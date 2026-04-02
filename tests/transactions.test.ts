@@ -11,6 +11,7 @@ import {
 	validateAddress,
 	validateVout,
 	validateBitcoinAddress,
+	reverseTxidBytes,
 } from '../src/transactions/validation';
 
 // ---------- Test Fixtures ----------
@@ -117,6 +118,61 @@ describe('createDepositRequest snapshot', () => {
 			'SplitCoins',  // split gas for fee
 			'MoveCall',    // deposit
 		]);
+	});
+
+	it('produces correct PTB structure with explicit depositFee', () => {
+		const builder = createDepositRequest(config, {
+			txid: VALID_TXID,
+			vout: 0,
+			amount: 100000n,
+			depositFee: 5000000n,
+		});
+
+		const tx = new Transaction();
+		builder(tx);
+
+		const serialized = serializeTxData(tx);
+		expect(serialized).toMatchSnapshot();
+	});
+
+	it('uses provided depositFee in SplitCoins command', () => {
+		const builder = createDepositRequest(config, {
+			txid: VALID_TXID,
+			vout: 0,
+			amount: 100000n,
+			depositFee: 1000000n,
+		});
+
+		const tx = new Transaction();
+		builder(tx);
+
+		const data = tx.getData();
+		const splitCoinsCmd = data.commands.find(
+			(c: { $kind: string }) => c.$kind === 'SplitCoins',
+		);
+		expect(splitCoinsCmd).toBeDefined();
+	});
+
+	it('defaults depositFee to 0 when not provided', () => {
+		const builderWithFee = createDepositRequest(config, {
+			txid: VALID_TXID,
+			vout: 0,
+			amount: 100000n,
+			depositFee: 0n,
+		});
+
+		const builderWithoutFee = createDepositRequest(config, {
+			txid: VALID_TXID,
+			vout: 0,
+			amount: 100000n,
+		});
+
+		const tx1 = new Transaction();
+		builderWithFee(tx1);
+		const tx2 = new Transaction();
+		builderWithoutFee(tx2);
+
+		expect(serializeTxData(tx1)).toEqual(serializeTxData(tx2));
 	});
 });
 
@@ -282,7 +338,7 @@ describe('validateU64', () => {
 });
 
 describe('validateTxid', () => {
-	it('accepts valid 64-char hex txid', () => {
+	it('accepts valid 64-char hex txid (uniform bytes unchanged by reversal)', () => {
 		const result = validateTxid(VALID_TXID);
 		expect(result).toBe('0x' + VALID_TXID);
 	});
@@ -292,10 +348,24 @@ describe('validateTxid', () => {
 		expect(result).toBe('0x' + VALID_TXID);
 	});
 
-	it('normalizes uppercase', () => {
+	it('normalizes uppercase (uniform bytes unchanged by reversal)', () => {
 		const upper = 'AB'.repeat(32);
 		const result = validateTxid(upper);
 		expect(result).toBe('0x' + 'ab'.repeat(32));
+	});
+
+	it('reverses bytes from display to internal byte order', () => {
+		// Display order: 01020304...1f20 (bytes 01,02,...,32)
+		const displayOrder = Array.from({ length: 32 }, (_, i) =>
+			(i + 1).toString(16).padStart(2, '0'),
+		).join('');
+		// Internal order: reversed bytes: 201f...04030201
+		const internalOrder = Array.from({ length: 32 }, (_, i) =>
+			(32 - i).toString(16).padStart(2, '0'),
+		).join('');
+
+		const result = validateTxid(displayOrder);
+		expect(result).toBe('0x' + internalOrder);
 	});
 
 	it('rejects too-short txid', () => {
@@ -308,6 +378,28 @@ describe('validateTxid', () => {
 
 	it('rejects non-hex characters', () => {
 		expect(() => validateTxid('g'.repeat(64))).toThrow(HashiTransactionError);
+	});
+});
+
+describe('reverseTxidBytes', () => {
+	it('reverses byte pairs of a 64-char hex string', () => {
+		const input = '0102030405060708091011121314151617181920212223242526272829303132';
+		const expected = '3231302928272625242322212019181716151413121110090807060504030201';
+		expect(reverseTxidBytes(input)).toBe(expected);
+	});
+
+	it('handles 0x prefix', () => {
+		const input = '0x' + 'ab'.repeat(32);
+		expect(reverseTxidBytes(input)).toBe('ab'.repeat(32));
+	});
+
+	it('is symmetric: reversing twice returns original', () => {
+		const original = '0102030405060708091011121314151617181920212223242526272829303132';
+		expect(reverseTxidBytes(reverseTxidBytes(original))).toBe(original);
+	});
+
+	it('rejects non-64-char input', () => {
+		expect(() => reverseTxidBytes('abcd')).toThrow(HashiTransactionError);
 	});
 });
 
@@ -436,6 +528,28 @@ describe('createDepositRequest validation', () => {
 				derivationPath: 'not-hex',
 			}),
 		).toThrow(HashiTransactionError);
+	});
+
+	it('throws for negative depositFee', () => {
+		expect(() =>
+			createDepositRequest(config, {
+				txid: VALID_TXID,
+				vout: 0,
+				amount: 100000n,
+				depositFee: -1n,
+			}),
+		).toThrow(HashiTransactionError);
+	});
+
+	it('accepts valid depositFee', () => {
+		expect(() =>
+			createDepositRequest(config, {
+				txid: VALID_TXID,
+				vout: 0,
+				amount: 100000n,
+				depositFee: 5000000n,
+			}),
+		).not.toThrow();
 	});
 });
 

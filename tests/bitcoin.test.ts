@@ -5,8 +5,10 @@ import {
 	satsToBtc,
 	btcToSats,
 	deriveDepositAddress,
+	arkworksToCompressedHex,
 } from '../src/bitcoin';
 import { HashiBitcoinError } from '../src/errors';
+import { hexToBytes } from '@noble/curves/abstract/utils';
 
 // ---- BIP-173 Test Vectors (bech32 segwit v0) ----
 
@@ -235,13 +237,66 @@ describe('satsToBtc / btcToSats round-trip', () => {
 	}
 });
 
-// ---- Stub ----
+// ---- Deposit Address Derivation ----
 
-describe('deriveDepositAddress (stub)', () => {
-	it('throws "Not yet implemented"', () => {
-		expect(() => deriveDepositAddress(new Uint8Array(33), 'm/0/0', 'mainnet'))
-			.toThrow(HashiBitcoinError);
-		expect(() => deriveDepositAddress(new Uint8Array(33), 'm/0/0', 'mainnet'))
-			.toThrow('not yet implemented');
+describe('deriveDepositAddress', () => {
+	// Test vector: secp256k1 generator point G as MPC key
+	const mpcKeyHex = '0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798';
+	const suiAddress = '0xfa48ce61314393474915fa05cb757810a6b8aab1c3c11b4b1d265b4cdccd9bed';
+	const expectedTestnetAddress = 'tb1py4n6pf6uxhqafane8l946kdhvy0tsg9vp4wz89qt899m35umm0zsf6y09l';
+
+	it('derives the correct testnet deposit address from hex key', () => {
+		const address = deriveDepositAddress(mpcKeyHex, suiAddress, 'testnet');
+		expect(address).toBe(expectedTestnetAddress);
+	});
+
+	it('derives the correct testnet deposit address from Uint8Array key', () => {
+		const keyBytes = hexToBytes(mpcKeyHex);
+		const address = deriveDepositAddress(keyBytes, suiAddress, 'testnet');
+		expect(address).toBe(expectedTestnetAddress);
+	});
+
+	it('derives a mainnet address with bc1p prefix', () => {
+		const address = deriveDepositAddress(mpcKeyHex, suiAddress, 'mainnet');
+		expect(address.startsWith('bc1p')).toBe(true);
+	});
+
+	it('produces a valid P2TR address that can be decoded', () => {
+		const address = deriveDepositAddress(mpcKeyHex, suiAddress, 'testnet');
+		const decoded = decodeBitcoinAddress(address);
+		expect(decoded.witnessVersion).toBe(1);
+		expect(decoded.witnessProgram.length).toBe(32);
+		expect(decoded.network).toBe('testnet');
+	});
+
+	it('different sui addresses produce different deposit addresses', () => {
+		const addr1 = deriveDepositAddress(mpcKeyHex, suiAddress, 'testnet');
+		const addr2 = deriveDepositAddress(mpcKeyHex, '0x' + '00'.repeat(32), 'testnet');
+		expect(addr1).not.toBe(addr2);
+	});
+
+	it('is deterministic: same inputs produce same output', () => {
+		const addr1 = deriveDepositAddress(mpcKeyHex, suiAddress, 'testnet');
+		const addr2 = deriveDepositAddress(mpcKeyHex, suiAddress, 'testnet');
+		expect(addr1).toBe(addr2);
+	});
+});
+
+// ---- Arkworks Conversion ----
+
+describe('arkworksToCompressedHex', () => {
+	it('rejects non-33-byte input', () => {
+		expect(() => arkworksToCompressedHex(new Uint8Array(32))).toThrow(HashiBitcoinError);
+		expect(() => arkworksToCompressedHex(new Uint8Array(34))).toThrow(HashiBitcoinError);
+	});
+
+	it('returns a 66-char hex string with 02 or 03 prefix', () => {
+		// Create a dummy 33-byte arkworks point (x=1, flag=0x00)
+		const ark = new Uint8Array(33);
+		ark[0] = 1; // x = 1 in LE
+		ark[32] = 0x00; // positive Y
+		const hex = arkworksToCompressedHex(ark);
+		expect(hex.length).toBe(66);
+		expect(hex.startsWith('02') || hex.startsWith('03')).toBe(true);
 	});
 });

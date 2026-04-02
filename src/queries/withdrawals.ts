@@ -20,6 +20,7 @@ import {
 	serializeAddressKey,
 } from './helpers.js';
 import { getHashiState } from './state.js';
+import { reverseTxidBytes } from '../transactions/validation.js';
 
 /**
  * Fetch a single withdrawal request from the withdrawal queue by its ID.
@@ -125,7 +126,7 @@ function convertWithdrawalRequestInfo(raw: any): WithdrawalRequestInfo {
 function convertPendingWithdrawal(raw: any): PendingWithdrawal {
 	return {
 		id: raw.id,
-		txid: raw.txid,
+		txid: '0x' + reverseTxidBytes(raw.txid),
 		requests: raw.requests.map(convertWithdrawalRequestInfo),
 		inputs: raw.inputs.map(convertUtxo),
 		withdrawalOutputs: raw.withdrawal_outputs.map(convertOutputUtxo),
@@ -143,7 +144,7 @@ function convertPendingWithdrawal(raw: any): PendingWithdrawal {
 function convertUtxo(raw: any): Utxo {
 	return {
 		id: {
-			txid: raw.id.txid,
+			txid: '0x' + reverseTxidBytes(raw.id.txid),
 			vout: raw.id.vout,
 		},
 		amount: toBigInt(raw.amount),

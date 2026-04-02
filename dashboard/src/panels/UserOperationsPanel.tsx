@@ -10,7 +10,7 @@
  * and TransactionPreview for displaying built transactions.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useCurrentAccount } from '@mysten/dapp-kit-react';
 import { useHashiClient } from '../context/HashiClientContext';
 import {
@@ -248,13 +248,19 @@ const executingStyle: React.CSSProperties = {
 
 function CreateDepositRequestPanel() {
   const client = useHashiClient();
+  const account = useCurrentAccount();
   const { state, build, execute, reset } = useTransactionExecution();
 
   const [txid, setTxid] = useState('');
   const [vout, setVout] = useState('');
   const [amount, setAmount] = useState('');
+  const [depositFee, setDepositFee] = useState<bigint | null>(null);
 
-  const canBuild = txid.trim() && vout.trim() && amount.trim();
+  useEffect(() => {
+    client.getDepositFee().then(setDepositFee).catch(() => setDepositFee(0n));
+  }, [client]);
+
+  const canBuild = txid.trim() && vout.trim() && amount.trim() && account;
 
   const handleBuild = useCallback(() => {
     if (!canBuild) return;
@@ -262,9 +268,11 @@ function CreateDepositRequestPanel() {
       txid: txid.trim(),
       vout: Number(vout.trim()),
       amount: BigInt(amount.trim()),
+      derivationPath: account.address,
+      depositFee: depositFee ?? 0n,
     });
     build(builder);
-  }, [client, txid, vout, amount, canBuild, build]);
+  }, [client, txid, vout, amount, canBuild, build, account, depositFee]);
 
   const handleExecute = useCallback(async () => {
     await execute();
@@ -311,8 +319,13 @@ function CreateDepositRequestPanel() {
         />
       </div>
       <div style={hintStyle}>
-        Amount is in satoshis (1 BTC = 100,000,000 satoshis).
+        Amount is in satoshis (1 BTC = 100,000,000 satoshis). Must match the exact Bitcoin UTXO output value.
       </div>
+      {depositFee !== null && depositFee > 0n && (
+        <div style={hintStyle}>
+          Protocol deposit fee: {depositFee.toString()} MIST
+        </div>
+      )}
       <div style={{ ...rowStyle, marginTop: 12 }}>
         {state.phase === 'idle' && (
           <button

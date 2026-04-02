@@ -102,7 +102,7 @@ import {
 } from './transactions/governance-ops.js';
 
 // Query functions
-import { getHashiState, getConfig } from './queries/state.js';
+import { getHashiState, getConfig, getDepositFee } from './queries/state.js';
 import { getDepositRequest, listDepositRequests } from './queries/deposits.js';
 import { getWithdrawalRequest, listPendingWithdrawals } from './queries/withdrawals.js';
 import { getCommittee, getMemberInfo } from './queries/committee.js';
@@ -564,6 +564,18 @@ export class HashiClient {
 	 */
 	async getConfig(): Promise<Config> {
 		return getConfig(this.client, this.config);
+	}
+
+	/**
+	 * Fetch the current protocol deposit fee from on-chain config.
+	 *
+	 * Pass the returned value as the `depositFee` parameter to
+	 * `createDepositRequest()`.
+	 *
+	 * @returns The deposit fee in MIST (SUI base units).
+	 */
+	async getDepositFee(): Promise<bigint> {
+		return getDepositFee(this.client, this.config);
 	}
 
 	/**

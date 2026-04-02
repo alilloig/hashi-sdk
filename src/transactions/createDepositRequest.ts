@@ -5,7 +5,7 @@
  *   1. utxo::utxo_id(txid, vout) -- creates UtxoId (pure return)
  *   2. utxo::utxo(utxo_id, amount, derivation_path) -- creates Utxo (pure return)
  *   3. deposit_queue::deposit_request(utxo, clock) -- creates DepositRequest (Clock auto-injected)
- *   4. tx.splitCoins(tx.gas, [0n]) -- split zero SUI for fee coin
+ *   4. tx.splitCoins(tx.gas, [depositFee]) -- split SUI for protocol fee
  *   5. deposit::deposit(hashi, deposit_request, fee_coin) -- Hashi mutable shared
  */
 
@@ -31,6 +31,8 @@ export interface CreateDepositRequestParams {
 	amount: bigint | number;
 	/** Optional derivation path, as a Sui address. */
 	derivationPath?: string;
+	/** Protocol deposit fee in MIST (SUI base units). Defaults to 0. Use getDepositFee() to fetch the current value from on-chain config. */
+	depositFee?: bigint | number;
 }
 
 /**
@@ -55,6 +57,9 @@ export function createDepositRequest(
 	const normalizedDerivationPath = params.derivationPath !== undefined
 		? validateAddress(params.derivationPath, 'derivationPath')
 		: null;
+	const validatedFee = params.depositFee !== undefined
+		? validateU64(params.depositFee, 'depositFee')
+		: 0n;
 
 	const packageId = config.packageId;
 	const hashiObjectId = config.hashiObjectId;
@@ -93,8 +98,8 @@ export function createDepositRequest(
 			}),
 		);
 
-		// Step 4: Split zero SUI from gas for the fee coin
-		const feeCoin = tx.splitCoins(tx.gas, [0n]);
+		// Step 4: Split SUI from gas for the protocol deposit fee
+		const feeCoin = tx.splitCoins(tx.gas, [validatedFee]);
 
 		// Step 5: Submit the deposit (Hashi shared object passed as object reference)
 		tx.add(

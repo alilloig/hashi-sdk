@@ -15,6 +15,7 @@ import {
 	serializeAddressKey,
 } from './helpers.js';
 import { getHashiState } from './state.js';
+import { reverseTxidBytes } from '../transactions/validation.js';
 
 /**
  * Fetch a single deposit request from the deposit queue by its ID.
@@ -107,7 +108,7 @@ function convertDepositRequest(raw: any): DepositRequest {
 		id: raw.id,
 		utxo: {
 			id: {
-				txid: raw.utxo.id.txid,
+				txid: '0x' + reverseTxidBytes(raw.utxo.id.txid),
 				vout: raw.utxo.id.vout,
 			},
 			amount: toBigInt(raw.utxo.amount),
