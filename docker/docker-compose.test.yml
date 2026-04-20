@@ -1,0 +1,80 @@
+version: "3.9"
+
+# E2E testing infrastructure for Hashi SDK
+# Bitcoin regtest provides instant blocks for deposit testing
+# Sui localnet should be started separately via hashi-localnet
+
+services:
+  bitcoin-regtest:
+    image: lncm/bitcoind:v27.0
+    container_name: hashi-bitcoin-regtest
+    ports:
+      - "18443:18443"  # RPC port
+      - "18444:18444"  # P2P port (usually not needed for tests)
+    command: >
+      -regtest
+      -server
+      -rpcuser=test
+      -rpcpassword=test
+      -rpcbind=0.0.0.0
+      -rpcallowip=0.0.0.0/0
+      -fallbackfee=0.0001
+      -txindex=1
+      -printtoconsole
+    healthcheck:
+      # Wait for 101 blocks to be mined (coinbase maturity)
+      # This ensures the wallet has spendable funds
+      test: >
+        bitcoin-cli -regtest -rpcuser=test -rpcpassword=test getblockcount |
+        awk '{exit ($$1 < 101) ? 1 : 0}'
+      interval: 2s
+      timeout: 5s
+      retries: 60
+      start_period: 5s
+    volumes:
+      - bitcoin-regtest-data:/home/bitcoin/.bitcoin
+    restart: unless-stopped
+
+  # Bootstrap service: mines initial blocks then exits
+  # This runs once after bitcoin-regtest is healthy
+  bitcoin-bootstrap:
+    image: lncm/bitcoind:v27.0
+    container_name: hashi-bitcoin-bootstrap
+    depends_on:
+      bitcoin-regtest:
+        condition: service_started
+    entrypoint: /bin/sh
+    command: >
+      -c '
+        echo "Waiting for Bitcoin RPC..."
+        until bitcoin-cli -regtest -rpcconnect=bitcoin-regtest -rpcuser=test -rpcpassword=test getblockchaininfo > /dev/null 2>&1; do
+          sleep 1
+        done
+
+        BLOCKS=$$(bitcoin-cli -regtest -rpcconnect=bitcoin-regtest -rpcuser=test -rpcpassword=test getblockcount)
+        if [ "$$BLOCKS" -lt 101 ]; then
+          echo "Mining initial blocks (current: $$BLOCKS, need: 101)..."
+          ADDR=$$(bitcoin-cli -regtest -rpcconnect=bitcoin-regtest -rpcuser=test -rpcpassword=test getnewaddress "" bech32m)
+          bitcoin-cli -regtest -rpcconnect=bitcoin-regtest -rpcuser=test -rpcpassword=test generatetoaddress 101 $$ADDR
+          echo "Bootstrap complete. Wallet funded with mature coinbase."
+        else
+          echo "Already have $$BLOCKS blocks, skipping bootstrap."
+        fi
+      '
+    restart: "no"
+
+volumes:
+  bitcoin-regtest-data:
+
+# Usage:
+#   Start:    docker compose -f docker/docker-compose.test.yml up -d
+#   Stop:     docker compose -f docker/docker-compose.test.yml down
+#   Logs:     docker compose -f docker/docker-compose.test.yml logs -f
+#   Reset:    docker compose -f docker/docker-compose.test.yml down -v
+#
+# RPC endpoint: http://127.0.0.1:18443
+# Credentials:  test:test
+#
+# Example RPC call:
+#   curl -u test:test --data-binary '{"jsonrpc":"2.0","id":1,"method":"getblockcount","params":[]}' \
+#        -H 'content-type: text/plain;' http://127.0.0.1:18443

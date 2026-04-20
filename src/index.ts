@@ -173,7 +173,7 @@ export {
 	deriveDepositAddress,
 	arkworksToCompressedHex,
 } from './bitcoin.js';
-export type { DecodedBitcoinAddress } from './bitcoin.js';
+export type { DecodedBitcoinAddress, BitcoinNetwork } from './bitcoin.js';
 
 // Event types and parsers
 export type {

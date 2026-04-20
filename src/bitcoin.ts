@@ -20,7 +20,11 @@ import { HashiBitcoinError } from './errors.js';
 
 const MAINNET_HRP = 'bc';
 const TESTNET_HRP = 'tb';
-const VALID_HRPS = new Set([MAINNET_HRP, TESTNET_HRP]);
+const REGTEST_HRP = 'bcrt';
+const VALID_HRPS = new Set([MAINNET_HRP, TESTNET_HRP, REGTEST_HRP]);
+
+/** Bitcoin network type for address encoding/decoding. */
+export type BitcoinNetwork = 'mainnet' | 'testnet' | 'regtest';
 
 const SATS_PER_BTC = 100_000_000n;
 const BTC_DECIMALS = 8;
@@ -32,7 +36,7 @@ const BTC_DECIMALS = 8;
  *
  * @param witnessProgram - The raw witness program bytes
  * @param witnessVersion - The segwit witness version (0 or 1)
- * @param network - 'mainnet' or 'testnet'
+ * @param network - 'mainnet', 'testnet', or 'regtest'
  * @returns The encoded Bitcoin address string
  *
  * @throws {HashiBitcoinError} If witnessVersion is unsupported or program length is invalid
@@ -40,9 +44,9 @@ const BTC_DECIMALS = 8;
 export function encodeBitcoinAddress(
 	witnessProgram: Uint8Array,
 	witnessVersion: number,
-	network: 'mainnet' | 'testnet',
+	network: BitcoinNetwork,
 ): string {
-	const hrp = network === 'mainnet' ? MAINNET_HRP : TESTNET_HRP;
+	const hrp = network === 'mainnet' ? MAINNET_HRP : network === 'regtest' ? REGTEST_HRP : TESTNET_HRP;
 
 	if (witnessVersion === 0) {
 		if (witnessProgram.length !== 20) {
@@ -78,7 +82,7 @@ export interface DecodedBitcoinAddress {
 	/** The segwit witness version (0 or 1). */
 	witnessVersion: number;
 	/** The network this address belongs to. */
-	network: 'mainnet' | 'testnet';
+	network: BitcoinNetwork;
 }
 
 /**
@@ -117,11 +121,11 @@ export function decodeBitcoinAddress(address: string): DecodedBitcoinAddress {
 	const prefix = decoded.prefix.toLowerCase();
 	if (!VALID_HRPS.has(prefix)) {
 		throw new HashiBitcoinError(
-			`Unknown address prefix "${decoded.prefix}". Expected "bc" (mainnet) or "tb" (testnet)`,
+			`Unknown address prefix "${decoded.prefix}". Expected "bc" (mainnet), "tb" (testnet), or "bcrt" (regtest)`,
 		);
 	}
 
-	const network: 'mainnet' | 'testnet' = prefix === MAINNET_HRP ? 'mainnet' : 'testnet';
+	const network: BitcoinNetwork = prefix === MAINNET_HRP ? 'mainnet' : prefix === REGTEST_HRP ? 'regtest' : 'testnet';
 
 	if (decoded.words.length < 1) {
 		throw new HashiBitcoinError('Invalid Bitcoin address: no witness version');
@@ -329,7 +333,7 @@ export function arkworksToCompressedHex(arkBytes: Uint8Array | number[]): string
  * @param mpcPublicKey - 33-byte compressed secp256k1 public key (standard 02/03 prefix, big-endian x).
  *   If the MPC key is in ark-works format (from on-chain), convert it first with `arkworksToCompressedHex`.
  * @param suiAddress - 32-byte Sui address (hex, with or without 0x prefix)
- * @param network - 'mainnet' or 'testnet'
+ * @param network - 'mainnet', 'testnet', or 'regtest'
  * @returns Bitcoin P2TR address string
  *
  * @throws {HashiBitcoinError} If inputs are invalid
@@ -337,7 +341,7 @@ export function arkworksToCompressedHex(arkBytes: Uint8Array | number[]): string
 export function deriveDepositAddress(
 	mpcPublicKey: Uint8Array | string,
 	suiAddress: string,
-	network: 'mainnet' | 'testnet',
+	network: BitcoinNetwork,
 ): string {
 	// 1. Parse the MPC public key (33-byte compressed) into a curve point
 	const mpcHex = typeof mpcPublicKey === 'string' ? mpcPublicKey : bytesToHex(mpcPublicKey);
@@ -387,7 +391,7 @@ export function deriveDepositAddress(
  */
 function buildTaprootScriptPathAddress(
 	xOnlyPubkey: Uint8Array,
-	network: 'mainnet' | 'testnet',
+	network: BitcoinNetwork,
 ): string {
 	// Build the leaf script: <xOnlyPubkey> OP_CHECKSIG
 	const leafScript = concatBytes(
@@ -425,7 +429,7 @@ function buildTaprootScriptPathAddress(
 	const outputKey = numberToBytesBE(outputAffine.x, 32);
 
 	// Encode as bech32m: witness version 1 + 32-byte output key
-	const hrp = network === 'mainnet' ? MAINNET_HRP : TESTNET_HRP;
+	const hrp = network === 'mainnet' ? MAINNET_HRP : network === 'regtest' ? REGTEST_HRP : TESTNET_HRP;
 	const words = [1, ...bech32m.toWords(outputKey)];
 	return bech32m.encode(hrp, words);
 }

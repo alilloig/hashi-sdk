@@ -102,6 +102,72 @@ describe('BIP-350 bech32m taproot v1', () => {
 	});
 });
 
+// ---- Regtest Network Support ----
+
+describe('Regtest network (bcrt prefix)', () => {
+	// Regtest uses 'bcrt' HRP per BIP-173
+	// Test vectors generated using Bitcoin Core regtest mode
+
+	// P2WPKH (witness v0) - same witness program as mainnet/testnet tests
+	const p2wpkhProgram = new Uint8Array([
+		0x75, 0x1e, 0x76, 0xe8, 0x19, 0x91, 0x96, 0xd4,
+		0x54, 0x94, 0x1c, 0x45, 0xd1, 0xb3, 0xa3, 0x23,
+		0xf1, 0x43, 0x3b, 0xd6,
+	]);
+
+	it('encodes regtest P2WPKH address with bcrt prefix', () => {
+		const encoded = encodeBitcoinAddress(p2wpkhProgram, 0, 'regtest');
+		expect(encoded.startsWith('bcrt1q')).toBe(true);
+		expect(encoded).toBe('bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080');
+	});
+
+	it('decodes regtest P2WPKH address correctly', () => {
+		const address = 'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080';
+		const result = decodeBitcoinAddress(address);
+		expect(result.witnessVersion).toBe(0);
+		expect(result.network).toBe('regtest');
+		expect(result.witnessProgram).toEqual(p2wpkhProgram);
+	});
+
+	it('round-trips regtest P2WPKH', () => {
+		const address = 'bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080';
+		const decoded = decodeBitcoinAddress(address);
+		const reencoded = encodeBitcoinAddress(decoded.witnessProgram, decoded.witnessVersion, decoded.network);
+		expect(reencoded).toBe(address);
+	});
+
+	// P2TR (witness v1) - using the same 32-byte program from mainnet test
+	it('encodes regtest P2TR address with bcrt1p prefix', () => {
+		// Use the witness program from the mainnet P2TR test
+		const mainnetP2tr = 'bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0';
+		const decoded = decodeBitcoinAddress(mainnetP2tr);
+		const regtestP2tr = encodeBitcoinAddress(decoded.witnessProgram, 1, 'regtest');
+		expect(regtestP2tr.startsWith('bcrt1p')).toBe(true);
+	});
+
+	it('decodes regtest P2TR address correctly', () => {
+		// First encode a regtest P2TR, then decode it
+		const mainnetP2tr = 'bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0';
+		const mainnetDecoded = decodeBitcoinAddress(mainnetP2tr);
+		const regtestP2tr = encodeBitcoinAddress(mainnetDecoded.witnessProgram, 1, 'regtest');
+
+		const result = decodeBitcoinAddress(regtestP2tr);
+		expect(result.witnessVersion).toBe(1);
+		expect(result.network).toBe('regtest');
+		expect(result.witnessProgram).toEqual(mainnetDecoded.witnessProgram);
+	});
+
+	it('round-trips regtest P2TR', () => {
+		const mainnetP2tr = 'bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0';
+		const mainnetDecoded = decodeBitcoinAddress(mainnetP2tr);
+		const regtestP2tr = encodeBitcoinAddress(mainnetDecoded.witnessProgram, 1, 'regtest');
+
+		const decoded = decodeBitcoinAddress(regtestP2tr);
+		const reencoded = encodeBitcoinAddress(decoded.witnessProgram, decoded.witnessVersion, decoded.network);
+		expect(reencoded).toBe(regtestP2tr);
+	});
+});
+
 // ---- Error Cases ----
 
 describe('Bitcoin address error handling', () => {
@@ -259,6 +325,36 @@ describe('deriveDepositAddress', () => {
 	it('derives a mainnet address with bc1p prefix', () => {
 		const address = deriveDepositAddress(mpcKeyHex, suiAddress, 'mainnet');
 		expect(address.startsWith('bc1p')).toBe(true);
+	});
+
+	it('derives a regtest address with bcrt1p prefix', () => {
+		const address = deriveDepositAddress(mpcKeyHex, suiAddress, 'regtest');
+		expect(address.startsWith('bcrt1p')).toBe(true);
+	});
+
+	it('produces a valid regtest P2TR address that can be decoded', () => {
+		const address = deriveDepositAddress(mpcKeyHex, suiAddress, 'regtest');
+		const decoded = decodeBitcoinAddress(address);
+		expect(decoded.witnessVersion).toBe(1);
+		expect(decoded.witnessProgram.length).toBe(32);
+		expect(decoded.network).toBe('regtest');
+	});
+
+	it('regtest and testnet addresses have same witness program but different prefix', () => {
+		const testnetAddr = deriveDepositAddress(mpcKeyHex, suiAddress, 'testnet');
+		const regtestAddr = deriveDepositAddress(mpcKeyHex, suiAddress, 'regtest');
+
+		const testnetDecoded = decodeBitcoinAddress(testnetAddr);
+		const regtestDecoded = decodeBitcoinAddress(regtestAddr);
+
+		// Same witness program (same derivation)
+		expect(regtestDecoded.witnessProgram).toEqual(testnetDecoded.witnessProgram);
+		// Different networks
+		expect(testnetDecoded.network).toBe('testnet');
+		expect(regtestDecoded.network).toBe('regtest');
+		// Different prefixes
+		expect(testnetAddr.startsWith('tb1p')).toBe(true);
+		expect(regtestAddr.startsWith('bcrt1p')).toBe(true);
 	});
 
 	it('produces a valid P2TR address that can be decoded', () => {
