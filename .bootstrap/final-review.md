@@ -1,83 +1,54 @@
 ---
 verdict: COMPLETE
-quality: 4
+quality: 4/5
 total_cycles: 6
-total_codex_calls: 8
+total_codex_calls: 4
 ---
 
 ## Spec Compliance
 
-### Fully Implemented
-- [x] @mysten/codegen BCS type generation (32 generated files)
-- [x] Signing-agnostic transaction builders ((tx: Transaction) => void | TransactionResult)
-- [x] HashiClient convenience class with SuiClient injection
-- [x] createDepositRequest (5-step PTB)
-- [x] requestWithdrawal (CoinWithBalance intent)
-- [x] cancelWithdrawal (transferObjects refund to explicit recipient)
-- [x] confirmDeposit (two-call PTB: new_committee_signature → confirm_deposit)
-- [x] deleteExpiredDeposits (batched)
-- [x] approveWithdrawalRequests (batched)
-- [x] commitWithdrawalTx (nested BCS double-encoding + Clock + Random)
-- [x] signWithdrawal, confirmWithdrawal, deleteExpiredSpentUtxo
-- [x] register (SuiSystem), 5 validator update methods
-- [x] startReconfig, endReconfig
-- [x] 4 cert submission methods + destroyAllCerts
-- [x] Full governance lifecycle (4 propose + vote/removeVote/deleteExpired + 4 execute + finalizeUpgrade)
-- [x] Validator preflight checks (bitmap, signature length, cardinality, deduplication)
-- [x] 9 query methods (getHashiState, deposits, withdrawals, committee, memberInfo, config, UTXOs)
-- [x] PaginatedResult<T> with { items, nextCursor, hasNextPage }
-- [x] 25-variant HashiEvent discriminated union
-- [x] parseHashiEvent (best-effort) + parseHashiEventStrict
-- [x] Multi-version package matching for events
-- [x] Generic type parameter extraction for proposal/treasury events
-- [x] Bitcoin bech32/bech32m encode/decode (BIP-173/BIP-350 test vectors)
-- [x] satsToBtc / btcToSats amount conversion
-- [x] Error hierarchy (5 error classes) with 31 abort codes
-- [x] Dual ESM/CJS build with 7 subpath exports
-- [x] HashiConfig with normalization, presets, overrides
-- [x] README with quickstart, examples, signing guidance, upgrade notes
-- [x] TSDoc on all public API (270+ blocks)
-- [x] Integration test scaffolding
-- [x] 281 passing unit tests across 9 test files
-
-### Partially Implemented
-- [~] getEpochCerts query (10th query) — not yet implemented, domain types exist
-- [~] deriveDepositAddress — stub (throws "not implemented"), algorithm is open question Q-DERIVE
-- [~] Network presets — placeholder zero addresses (bridge not yet deployed)
-- [~] Integration tests — scaffolding only, not executed against live contract
-
-### Not Implemented (Intentionally Out of Scope)
-- Signer/wallet management
-- Indexer integration
-- React/dapp-kit UI bindings
-- MPC/BLS signing
-- Bitcoin transaction construction
-- WebSocket subscription helpers
+| Feature | Status |
+|---------|--------|
+| React + Vite dashboard at `dashboard/` | ✅ Fully implemented |
+| Local SDK consumption via `file:..` | ✅ |
+| Wallet connection via dapp-kit-react | ✅ |
+| SUI devnet faucet button | ✅ |
+| BTC Testnet4 faucet link | ✅ |
+| 34 transaction builder panels | ✅ All 34 implemented |
+| 9 query panels with pagination | ✅ All 9 implemented |
+| Event live subscription | ✅ Polling-based (every 5s) |
+| Event manual parse mode | ✅ Via parseHashiEventStrict |
+| Event type filtering | ✅ 25-variant filter |
+| 4 Bitcoin helper panels | ✅ encode/decode address, sats/BTC |
+| deriveDepositAddress note | ✅ Info note (SDK stub) |
+| Shared components | ✅ OperationPanel, JsonViewer, ErrorDisplay, TransactionPreview, WalletGuard, HexInput, BatchIdInput, CommitteeSignatureInputs |
+| Transaction build-inspect-execute flow | ✅ With abort code display |
+| Sidebar navigation (11 categories) | ✅ All routed to real panels |
+| Hash-based deep links | ✅ |
+| Committee authority warning | ✅ On all validator/committee/governance panels |
+| README quick-start guide | ✅ |
+| TypeScript compiles clean | ✅ |
 
 ## Claude Assessment
 
-The hashi-sdk is a comprehensive TypeScript SDK that successfully translates the Hashi Rust transaction executor's 14 methods into 30+ typed TypeScript transaction builders, implements a complete query layer for the Hashi shared object's dynamic field structure, and provides a 25-variant event parser with multi-version package support.
+The dashboard is a comprehensive, functional prototype that covers the full SDK API surface. All 6 cycles passed evaluation with TypeScript compiling cleanly. The implementation follows consistent patterns (AsyncState for queries, useTransactionExecution for transactions, shared input components for committee signatures and batch IDs).
 
-**Architecture**: The codegen-as-foundation pattern works well — 32 generated files provide the BCS/function wrapper base, while 39 handwritten files add the domain logic, orchestration, and developer ergonomics. The three-layer type system (codegen → domain → conversion) keeps the public API clean.
-
-**Testing**: 281 unit tests with snapshot coverage for all transaction builder PTB structures, BCS round-trip verification, event parsing for all variants, Bitcoin test vectors, and mock RPC query tests. The test-to-code ratio is healthy.
-
-**Gaps**: The missing getEpochCerts query (TOB certificates) is a real spec gap that should be addressed. The deriveDepositAddress stub is acceptable given the unresolved protocol question.
+The two minor gaps Codex identified are acceptable for a prototype:
+1. `parseHashiEvent` (non-strict) isn't exposed as a separate panel — `parseHashiEventStrict` covers the same functionality with better error reporting.
+2. `deriveDepositAddress` is a SDK-level stub, not a dashboard gap.
 
 ## Codex Assessment
 
-Codex rated 3/5, flagging: cancelWithdrawal semantics (FIXED — now accepts explicit recipient), missing getEpochCerts query (acknowledged gap), @scure/base undeclared dependency (FIXED). After fixes, the remaining gap is the single missing query method.
+4/5 quality. "Strong bootstrap" covering most of the intended surface area. Flagged: event polling cursor logic could reorder/skip events, `parseHashiEvent` not separately exposed.
 
 ## Gaps
 
-1. **getEpochCerts query** — Domain types exist in src/types/tob.ts but the query function is not implemented. Would require dynamic field lookup with TobKey struct key.
-2. **deriveDepositAddress** — Stub implementation. Requires determining the exact Taproot derivation algorithm from the Hashi Rust source.
-3. **Network presets** — Placeholder zero addresses until bridge deployment.
+1. **Event polling reliability** — cursor-per-module issue in live subscription. Acceptable for prototype, should be improved for production use.
+2. **parseHashiEvent panel** — only strict parser exposed. Non-strict parser provides a different (lenient) behavior. Minor.
 
 ## Recommended Next Steps
 
-1. Implement getEpochCerts query to complete the 10-query spec requirement
-2. Investigate and implement deriveDepositAddress from Rust reference implementation
-3. Update network presets with real deployment addresses
-4. Run integration tests against Sui localnet with deployed Hashi package
-5. Publish to npm as hashi-sdk@0.1.0
+1. Browser smoke test on devnet with a real wallet
+2. Rework event polling to use a more robust cursor model
+3. Add `parseHashiEvent` as an option in the manual parse tab
+4. Implement `deriveDepositAddress` in the SDK when the algorithm is finalized

@@ -1,40 +1,24 @@
----
-type: spec-critique
-created: 2026-04-01T13:30:00Z
----
+# Spec Critique & Negotiation Log
 
 ## Codex Review (Gate G2)
 
-### Findings (7 items)
+Codex identified 12 issues (2 critical, 4 high, 4 medium, 2 low):
 
-1. **[Critical] Core protocol details unknown** — 7 open questions block implementation correctness.
-   - **Resolution**: Added Phase 0 (Protocol Verification) that MUST resolve all questions before coding starts.
+### Accepted & Addressed
+1. **Coverage numbers inconsistency** (Critical) — Fixed: matrix header now says 34, summary table corrected to 36 total (34 exposed + 2 excluded).
+2. **"ALL" vs exclusions contradiction** (High) — Added "Scope Definition" section explicitly defining what "all operations" means and excluding non-interactive exports.
+3. **Open questions too vague** (High) — Resolved all 6 open questions with concrete decisions in new "Resolved Design Decisions" section.
+4. **Form strategy underspecified** (High) — Decided: hand-authored forms with shared input components.
+5. **Event subscription undefined** (Medium) — Decided: manual reconnect, 500-entry cap, no auto-reconnect.
+6. **Faucet ambiguous** (Medium) — Decided: `@mysten/sui/faucet` API with link fallback.
+7. **Routing undecided** (Medium) — Decided: single-page with hash-based deep links.
+8. **Config isolation vague** (Medium) — Decided: single `config.ts` module, no scattered constants.
+9. **README underspecified** (Low) — Defined required sections.
+10. **Shared component lifecycle** (Low) — Addressed implicitly via form strategy decision.
 
-2. **[High] Upgrade/version handling underspecified** — No explicit compatibility contract.
-   - **Resolution**: Added Compatibility Contract section in Release/Versioning. Each SDK release bound to specific Hashi package schema. Version mismatch → HashiParseError. SDK SHOULD warn on version mismatch in getHashiState().
+### Partially Accepted
+11. **Acceptance criteria not testable enough** (High) — The spec already has per-section acceptance criteria. For a prototype, these are sufficient. Adding formal test contracts would contradict the "no tests in v1" user decision.
 
-3. **[High] Validator security model too thin** — SDK defers all validation to on-chain.
-   - **Resolution**: Added validator preflight checks (bitmap non-empty, signature 48 bytes, no duplicate UTXOs/requestIds, output cardinality checks, witness program length validation).
-
-4. **[High] Query BCS coupling with no compatibility strategy** — BCS layout coupled to specific package version.
-   - **Resolution**: Explicit statement: SDK targets one schema version at a time. After incompatible upgrade, SDK must be updated (codegen re-run). CI codegen is-dirty check catches local drift. Consumer-facing mismatch is documented failure mode.
-
-5. **[Medium] Event count 24 vs 25 contradiction** — WithdrawalCancelledEvent creates ambiguity.
-   - **Resolution**: Settled at 25 variants. Updated all references from 24 → 25.
-
-6. **[Medium] Acceptance criteria not objective enough** — Snapshot tests don't prove execution correctness.
-   - **Resolution**: Added Acceptance Gate Ownership section: unit/snapshot tests are SDK's gate; execution validation is Hashi project's external gate.
-
-7. **[Medium] Scope aggressive for AI implementation** — Should split MVP/deferred.
-   - **Not accepted**: User explicitly requested all 6 phases. Phasing provides incremental delivery. Risk is schedule, not architecture.
-
-## Negotiation Round 2
-
-Codex reviewed changes and flagged 5 refinements:
-- Compatibility contract should be release-facing (incorporated)
-- commitWithdrawalTx needs duplicate-rejection checks (incorporated)
-- Update event count references everywhere (done)
-- Historical package ID source-of-truth operationally vague (documented as consumer responsibility)
-- CI codegen check scope limitation (clarified in spec)
-
-All accepted and incorporated.
+### Rejected
+12. **No automated tests** (Critical per Codex) — The user explicitly chose "functional prototype" quality bar. Manual verification via the acceptance criteria is sufficient for v1. The dashboard IS the test harness for the SDK.
+13. **Security posture** (High per Codex) — The dashboard is a local dev tool, not a public app. Network is pinned to devnet by hardcoded config. Transaction preview before signing is already specified. No secrets are handled. Additional threat modeling is out of scope for a prototype.

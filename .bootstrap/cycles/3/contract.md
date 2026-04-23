@@ -1,35 +1,30 @@
 ---
 cycle: 3
-name: Bitcoin Helpers + Event System
+name: User Transaction Operations
 ---
 
 ## Scope
-Implement Bitcoin address encoding/decoding (bech32/bech32m), deposit address derivation, amount conversion helpers. Define the HashiEvent discriminated union (25 variants), implement best-effort and strict event parsers with multi-version package matching and generic type parameter extraction.
+Implement the build-inspect-sign-execute transaction flow infrastructure (TransactionPreview, WalletGuard components, useTransactionExecution hook). Build the 3 user transaction panels: createDepositRequest, requestWithdrawal, cancelWithdrawal. Wire #user-operations route.
 
 ## Completion Criteria
 
-1. [ ] `src/bitcoin.ts` implements `encodeBitcoinAddress(witnessProgram, witnessVersion, network)` with bech32 for v0, bech32m for v1
-2. [ ] `src/bitcoin.ts` implements `decodeBitcoinAddress(address)` returning `{ witnessProgram, witnessVersion, network }`
-3. [ ] `src/bitcoin.ts` implements `satsToBtc(sats)` and `btcToSats(btc)` with correct 8-decimal precision
-4. [ ] `src/bitcoin.ts` throws `HashiBitcoinError` for invalid addresses, unsupported witness versions, wrong program lengths
-5. [ ] `src/bitcoin.ts` depends only on `@noble/curves` and `@noble/hashes` (no `@mysten/sui` imports)
-6. [ ] Bitcoin helper tests pass BIP-173 test vectors (bech32 segwit v0)
-7. [ ] Bitcoin helper tests pass BIP-350 test vectors (bech32m taproot v1)
-8. [ ] `satsToBtc`/`btcToSats` round-trip correctly for edge cases (0, max supply, precision)
-9. [ ] `src/events/` directory exists with event types and parser functions
-10. [ ] `HashiEvent` discriminated union type defined with 25 variants, each having a `type` string literal discriminant
-11. [ ] `parseHashiEvent(event, packageIds)` returns `HashiEvent | null` (best-effort: null for unknown packages/events/decode failures)
-12. [ ] `parseHashiEventStrict(event, packageIds)` returns `{ event: HashiEvent } | { error: HashiParseError }` with failure reasons
-13. [ ] Generic type parameter extraction works for proposal events (VoteCast, ProposalCreated, etc.) and treasury events (Mint, Burn)
-14. [ ] Multi-version package matching: events parsed correctly regardless of which package version emitted them
-15. [ ] Event parser tests cover all 25 variants with mock data
-16. [ ] Event parser tested with two different package IDs (simulating upgrade)
-17. [ ] `npx tsc --noEmit` exits 0
-18. [ ] `npx vitest run` exits 0 with all tests passing
+1. [ ] A `WalletGuard` component exists that shows "Connect wallet to use this operation" when no wallet is connected, and renders children when connected
+2. [ ] A `TransactionPreview` component exists that displays built transaction details (Move call targets, arguments)
+3. [ ] A shared `useTransactionExecution` hook or pattern exists that handles: build TX → show preview → sign & execute → show result/error
+4. [ ] The #user-operations hash route renders a UserOperationsPanel
+5. [ ] `createDepositRequest` panel: form with txid (hex), vout (number), amount (satoshis bigint) inputs. Builds and executes transaction.
+6. [ ] `requestWithdrawal` panel: form with Bitcoin address (hex bytes), amount (satoshis) inputs. Builds and executes transaction.
+7. [ ] `cancelWithdrawal` panel: form with withdrawal request ID, recipient address inputs. Builds and executes transaction.
+8. [ ] Transaction execution shows the transaction digest on success
+9. [ ] Transaction execution shows full error details on failure (including abort code if available)
+10. [ ] TypeScript compiles with no errors (`npx tsc --noEmit` exits 0)
 
 ## Verification Commands
-- `npx tsc --noEmit` — verifies criterion 17
-- `npx vitest run` — verifies criteria 6, 7, 8, 15, 16, 18
+- `cd /Users/alilloig/workspace/hashi-sdk/dashboard && npx tsc --noEmit` — verifies criteria 10
 
 ## Context from Previous Cycles
-Cycle 1: Foundation (scaffold, codegen, config, errors, types, build). Cycle 2: User-facing transaction builders (createDepositRequest, requestWithdrawal, cancelWithdrawal with validation and snapshot tests). The error hierarchy (HashiBitcoinError, HashiParseError) and domain types are already defined.
+- Cycle 1: App shell, shared components (OperationPanel, JsonViewer, ErrorDisplay), HashiClient provider, wallet connect
+- Cycle 2: Queries panel with all 9 query operations, AsyncState pattern for loading/error states
+- HashiClient is available via `useHashiClient()` from `./context/HashiClientContext`
+- The SDK transaction builders return `(tx: Transaction) => void | TransactionResult` closures
+- For signing/executing, use dapp-kit-react's `useSignAndExecuteTransaction` hook

@@ -2,60 +2,51 @@
 cycle: 2
 iteration: 1
 status: DONE
-timestamp: 2026-04-01T13:46:00Z
+timestamp: 2026-04-01T12:00:00Z
 ---
 
 ## What I Implemented
 
-Three user-facing transaction builder functions for the Hashi bridge SDK, along with input validation utilities, shared-object helpers, and comprehensive tests.
+Implemented the full Queries panel for the Hashi SDK dashboard, covering all 9 query operations exposed by the HashiClient facade. Added `@tanstack/react-query` as a dependency and wrapped the app with `QueryClientProvider`. Wired the `#queries` hash route in App.tsx to render the new QueriesPanel.
 
 ## Contract Criteria Addressed
 
-- **Criterion 1 (src/transactions/ directory)**: Created 6 files: `validation.ts`, `shared-objects.ts`, `createDepositRequest.ts`, `requestWithdrawal.ts`, `cancelWithdrawal.ts`, `index.ts`. All re-exported from the main `src/index.ts`.
-
-- **Criterion 2 (createDepositRequest 5-step PTB)**: Implements the exact 5-step sequence: (1) `utxo::utxo_id(txid, vout)`, (2) `utxo::utxo(utxo_id, amount, derivation_path)`, (3) `deposit_queue::deposit_request(utxo, clock)` (Clock auto-injected by codegen), (4) `tx.splitCoins(tx.gas, [0n])`, (5) `deposit::deposit(hashi, deposit_request, fee_coin)`.
-
-- **Criterion 3 (requestWithdrawal CoinWithBalance)**: Uses `coinWithBalance({ type: btcCoinType, balance: amount })` from `@mysten/sui/transactions` to create BTC coin, then calls `withdraw::request_withdrawal`. BTC coin type constructed from `config.btcCoinType` (which uses `originalPackageId`).
-
-- **Criterion 4 (cancelWithdrawal cancel + transferObjects)**: Calls `withdraw::cancel_withdrawal` to get returned `Coin<BTC>`, then `tx.transferObjects([returnedCoin], sender_placeholder)` for refund.
-
-- **Criterion 5 (return type)**: `createDepositRequest` and `requestWithdrawal` return `(tx: Transaction) => void`. `cancelWithdrawal` returns `(tx: Transaction) => TransactionResult` since it captures the returned coin from transferObjects.
-
-- **Criterion 6 (shared object helpers)**: `CLOCK_OBJECT_ID` constant exported. Hashi object passed as `hashiObjectId` string from config (SDK resolves as `UnresolvedObject`). Clock is auto-injected by the codegen `normalizeMoveArguments` when it sees `0x2::clock::Clock` in `argumentsTypes`.
-
-- **Criterion 7 (input validation)**: All validation runs synchronously before the closure is returned. Includes: address normalization (via `normalizeSuiAddress`), txid validation (64-char hex), u64 range checks, vout u32 range, bitcoin address byte length (20 or 32). All throw `HashiTransactionError`.
-
-- **Criterion 8 (Uint8Array for bitcoinAddress)**: `requestWithdrawal` accepts `string | Uint8Array`. Uint8Array validated for 20 or 32 byte length. String treated as hex and decoded to bytes. Bech32 deferred to Cycle 3.
-
-- **Criterion 9 (snapshot tests)**: 6 snapshot tests across 3 builders covering: deposit without derivation path, deposit with derivation path, withdrawal with Uint8Array, withdrawal with hex string, withdrawal with 32-byte address, cancel withdrawal. Snapshots committed.
-
-- **Criterion 10 (validation error tests)**: 25 validation tests covering all validators (`validateU64`, `validateTxid`, `validateAddress`, `validateVout`, `validateBitcoinAddress`) plus integration tests verifying builders throw `HashiTransactionError` for invalid inputs.
-
-- **Criterion 11 (tsc --noEmit)**: Exits 0 with no errors.
-
-- **Criterion 12 (vitest run)**: All 87 tests pass (47 new transaction tests + 40 existing).
+- Criterion 1: `@tanstack/react-query` is in package.json dependencies (`^5.96.1`) and installed in node_modules.
+- Criterion 2: `QueryClientProvider` wraps the entire app in App.tsx, outside the DAppKitProvider.
+- Criterion 3: The `#queries` hash route renders a QueriesPanel component with all 9 query sub-panels.
+- Criterion 4: `getHashiState` panel has a button that fetches and displays full bridge state as JSON via JsonViewer.
+- Criterion 5: `getConfig` panel has a button that fetches and displays bridge config as JSON.
+- Criterion 6: `getDepositRequest` panel has a text input for request ID, button to fetch, displays result or "Not found".
+- Criterion 7: `listDepositRequests` panel has a button for first page, next/prev pagination controls using a cursor stack, displays list as JSON.
+- Criterion 8: `getWithdrawalRequest` panel has a text input for request ID, button to fetch, displays result or "Not found".
+- Criterion 9: `listPendingWithdrawals` panel has a button for first page, next/prev pagination controls, displays list as JSON.
+- Criterion 10: `getCommittee` panel has an optional epoch input, button to fetch current committee, displays result as JSON or "Not found".
+- Criterion 11: `getMemberInfo` panel has a text input for validator address, button to fetch, displays result or "Not found".
+- Criterion 12: `getUtxo` panel has text inputs for txid and vout, button to fetch, displays result or "Not found".
+- Criterion 13: All query panels show "Loading..." text while fetching (via the `AsyncState<T>` discriminated union with `status: 'loading'`).
+- Criterion 14: All query panels show errors via the existing ErrorDisplay component when queries fail.
+- Criterion 15: TypeScript compiles with no errors (`npx tsc --noEmit` exits 0, and `npx vite build` succeeds).
 
 ## Tests Written and Results
 
-- `npx tsc --noEmit` -> Exit 0, no errors
-- `npx vitest run` -> 4 test files, 87 tests passed (47 new)
-  - 6 snapshot tests for PTB structures
-  - 16 structural assertion tests (command counts, command types, return values)
-  - 25 validation unit tests
-  - Plus existing 40 tests from Cycle 1
+- `npx tsc --noEmit` -> exits 0, no type errors
+- `npx vite build` -> builds successfully (559 modules, 613 kB bundle)
+
+No unit tests were specified in the contract for this cycle. The dashboard is a UI-only project without a test runner configured. Verification was done through type checking and successful bundling.
 
 ## Files Changed
 
-- `src/transactions/validation.ts` -- Input validation: validateU64, validateTxid, validateAddress, validateVout, validateBitcoinAddress
-- `src/transactions/shared-objects.ts` -- CLOCK_OBJECT_ID constant
-- `src/transactions/createDepositRequest.ts` -- 5-step deposit PTB builder
-- `src/transactions/requestWithdrawal.ts` -- Withdrawal request PTB builder with coinWithBalance
-- `src/transactions/cancelWithdrawal.ts` -- Cancel withdrawal PTB builder with transferObjects refund
-- `src/transactions/index.ts` -- Re-exports for all transaction builders and utilities
-- `src/index.ts` -- Added transaction builder exports to main barrel file
-- `tests/transactions.test.ts` -- 47 tests: snapshots, structural assertions, validation errors
-- `tests/__snapshots__/transactions.test.ts.snap` -- Committed snapshot file
+- `dashboard/package.json` -- added `@tanstack/react-query` dependency
+- `dashboard/package-lock.json` -- lockfile updated with react-query packages
+- `dashboard/src/App.tsx` -- added QueryClientProvider wrapper, QueriesPanel import, and #queries route
+- `dashboard/src/panels/QueriesPanel.tsx` -- new file with all 9 query sub-panels
 
 ## Commits
 
-- `5474205` -- feat: add user-facing transaction builders for deposit, withdrawal, and cancel
+- `0dbcc85` -- feat: add Queries panel with all 9 SDK query operations
+
+## Design Decisions
+
+- Used manual `useState`-based async state management (AsyncState discriminated union) rather than `@tanstack/react-query` hooks for the individual panels. This keeps things simple since each query is triggered on-demand by button click rather than being auto-fetched. The QueryClientProvider is still installed for future use by dapp-kit or other panels.
+- Pagination uses a cursor stack pattern: previous cursors are pushed onto an array when navigating forward, and popped when going back. This allows stateless back-navigation without server-side support for reverse pagination.
+- All sub-panels are defined as private components within QueriesPanel.tsx since they share styles and helpers. They could be split into individual files if the panel grows.

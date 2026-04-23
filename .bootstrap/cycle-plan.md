@@ -1,89 +1,76 @@
 # Cycle Plan
 
-## Cycle 1: Foundation (Scaffold + Codegen + Config + Types + Errors + Protocol Verification)
-- **Scope**: Initialize repository (package.json, tsconfig, vitest, eslint). Set up @mysten/codegen with Hashi Move package and run initial codegen. Implement HashiConfig with presets. Implement HashiError hierarchy with abort code mapping. Define all domain type interfaces. Set up build pipeline (esbuild + tsc for dual ESM/CJS). Resolve all 7 open questions by inspecting reference codebases (Q-DERIVE, Q-TXID-BYTE-ORDER, Q-BTC-COIN-TYPE-PKG, Q-ERROR-FORMAT, Q-CODEGEN-ENTRY-FNS, Q-BUILD-SCRIPTS, Q-WITHDRAWAL-CANCELLED-EVENT). Create initial test fixtures.
+## Cycle 1: Foundation & App Shell
+- **Scope**: Scaffold Vite + React + TypeScript app in `dashboard/`. Set up package.json with local SDK link, dapp-kit-react, react-query. Create config module with devnet constants. Build app shell with sidebar navigation, wallet connect header, and HashiClient provider context. Create the shared OperationPanel, JsonViewer, and ErrorDisplay components. Implement faucets panel (SUI devnet faucet button + BTC external link).
 - **Dependencies**: None (foundation cycle)
-- **Complexity**: Moderate
+- **Complexity**: moderate
 - **Deliverables**: 
-  - Working package scaffold that builds (dist/esm/ + dist/cjs/)
-  - Codegen output in src/contracts/
-  - HashiConfig with mainnet/testnet presets + override + validation
-  - Complete error hierarchy with abort code mapping
-  - All domain type interfaces in src/types/
-  - BCS re-export layer
-  - Protocol verification findings documented
-  - Unit tests for config and errors
-  - BCS round-trip tests for at least 5 representative types
-  - Initial test fixtures (BCS payloads, event envelopes)
+  - `dashboard/` directory with working Vite dev server
+  - Wallet connects and shows address/balance
+  - Sidebar navigation with all categories (panels empty)
+  - SUI faucet dispenses tokens
+  - BTC faucet link works
+  - Shared components exist and render
 - **Suggested model**: opus
 
-## Cycle 2: User-Facing Transaction Builders
-- **Scope**: Implement createDepositRequest (5-step PTB), requestWithdrawal (CoinWithBalance), cancelWithdrawal (transferObjects refund). Implement shared-object argument helpers. Add input validation. Note: requestWithdrawal may accept raw bytes for Bitcoin address initially if Bitcoin helpers aren't ready (cycle 3 adds the string address path).
-- **Dependencies**: Cycle 1
-- **Complexity**: Moderate
+## Cycle 2: Queries Panel
+- **Scope**: Implement all 9 query operation panels using the shared OperationPanel + JsonViewer components. Include paginated list queries with cursor controls. Each query panel has appropriate input fields and displays results as formatted JSON.
+- **Dependencies**: Cycle 1 (app shell, shared components, HashiClient provider)
+- **Complexity**: moderate
 - **Deliverables**:
-  - 3 user-facing transaction builder functions
-  - Shared object helpers (Hashi, Clock)
-  - Input validation (address format, byte lengths, bigint bounds)
-  - Snapshot tests for all 3 PTB structures
-  - Validation error tests
+  - 9 query panels functional
+  - getHashiState returns and displays data from devnet
+  - Paginated queries have next/prev controls
+  - Null results show "Not found"
+  - Query errors display with type info
+- **Suggested model**: sonnet
+
+## Cycle 3: User Transaction Operations
+- **Scope**: Implement the build-inspect-sign-execute transaction flow infrastructure (TransactionPreview, WalletGuard components, useTransactionExecution hook). Build the 3 user transaction panels: createDepositRequest, requestWithdrawal, cancelWithdrawal. Each form validates inputs, builds the transaction, shows preview, and supports sign+execute.
+- **Dependencies**: Cycle 1 (app shell, shared components), Cycle 2 (validates SuiClient works)
+- **Complexity**: moderate
+- **Deliverables**:
+  - TransactionPreview component shows Move call details
+  - WalletGuard blocks wallet-required operations when disconnected
+  - 3 user transaction panels with forms and validation
+  - Build → inspect → sign → execute flow works end-to-end
+  - Errors display with SDK error hierarchy info
 - **Suggested model**: opus
 
-## Cycle 3: Bitcoin Helpers + Event System
-- **Scope**: Implement Bitcoin address encode/decode (bech32/bech32m), deposit address derivation (secp256k1 via @noble/curves), satsToBtc/btcToSats. Define HashiEvent discriminated union (25 variants). Implement parseHashiEvent (best-effort) and parseHashiEventStrict. Implement generic type param extraction. Implement multi-version package matching. Update requestWithdrawal to accept human-readable Bitcoin addresses.
-- **Dependencies**: Cycle 1 (types, errors)
-- **Complexity**: Moderate
+## Cycle 4: Validator, Committee & Protocol Operations
+- **Scope**: Implement the remaining 31 transaction builder panels: validator management (6), committee deposit ops (2), committee withdrawal ops (5), reconfiguration (2), certificate ops (4), governance (12). Create shared input components for committee signatures (epoch + signature + bitmap), batch ID inputs, and hex byte inputs. These reuse the transaction flow from Cycle 3.
+- **Dependencies**: Cycle 3 (transaction execution infrastructure)
+- **Complexity**: complex (highest panel count, complex forms like commitWithdrawalTx)
 - **Deliverables**:
-  - Bitcoin address encode/decode with BIP-173/BIP-350 test vectors
-  - Deposit address derivation (secp256k1)
-  - Amount conversion helpers
-  - HashiEvent type with 25 variants
-  - parseHashiEvent + parseHashiEventStrict functions
-  - Generic type parameter extraction
-  - Multi-version package matching
-  - Event parser tests for all 25 variants
-  - Multi-version parsing tests (two package IDs)
-  - requestWithdrawal updated to accept bech32/bech32m strings
+  - All 31 remaining transaction panels implemented
+  - Committee signature inputs are consistent across forms
+  - Batch operations support add/remove for multiple entries
+  - commitWithdrawalTx handles nested UTXO inputs
+  - All forms build transactions and support sign+execute
+  - Warning note visible for committee operations
 - **Suggested model**: opus
 
-## Cycle 4: Query Layer
-- **Scope**: Implement all 10 query methods: getHashiState, getDepositRequest, listDepositRequests, getWithdrawalRequest, listPendingWithdrawals, getCommittee, getMemberInfo, getConfig, getUtxo, getEpochCerts. Implement PaginatedResult<T> wrapper. Implement BCS deserialization for all queried types. Implement dynamic field key encoding.
-- **Dependencies**: Cycle 1 (types, config, errors)
-- **Complexity**: Complex
+## Cycle 5: Events & Bitcoin Helpers
+- **Scope**: Implement the Events panel with live subscription (start/stop, filtered log, 500-entry cap, manual reconnect) and manual parse mode. Implement 4 Bitcoin helper panels (encode/decode address, sats/BTC conversion) plus deriveDepositAddress info note. Build the EventLog component with type badges and filtering.
+- **Dependencies**: Cycle 1 (app shell), indirectly Cycle 2 (SuiClient configuration)
+- **Complexity**: moderate
 - **Deliverables**:
-  - All 10 query functions
-  - PaginatedResult<T> type
-  - Dynamic field key encoding for struct keys (UtxoId, TobKey)
-  - Unit tests with mock RPC responses
-  - Pagination tests (first page, continuation, empty)
-  - Not-found → null tests
-  - Decode failure → throw tests
-- **Suggested model**: opus
+  - Live event subscription with start/stop
+  - Event type filtering (25 variants)
+  - Manual parse mode accepts JSON and displays result
+  - EventLog component with scrolling, badges, filtering
+  - 4 Bitcoin helper panels work without wallet
+  - deriveDepositAddress shows stub note
+- **Suggested model**: sonnet
 
-## Cycle 5: Validator/Committee Transaction Builders
-- **Scope**: Implement all validator/committee operations: confirmDeposit (two-call), deleteExpiredDeposits (batched), approveWithdrawalRequests (batched), commitWithdrawalTx (nested BCS + Random), signWithdrawal, confirmWithdrawal, deleteExpiredSpentUtxo, register, 5 validator updates, startReconfig, endReconfig, 4 cert submissions, full governance lifecycle (4 propose + vote/removeVote/deleteExpired + 4 execute + finalizeUpgrade).
-- **Dependencies**: Cycle 2 (shared-object helpers, validation patterns), Cycle 3 (Bitcoin address validation for outputs)
-- **Complexity**: Complex
+## Cycle 6: Polish, README & Coverage Verification
+- **Scope**: Hash-based deep linking for all panels. Verify every SDK operation has a panel (coverage audit). Fix any broken panels found during verification. Add README quick-start section with install, run, wallet prereqs, devnet warning, faucet instructions, known limitations. Final pass on error handling and edge cases.
+- **Dependencies**: All previous cycles
+- **Complexity**: simple
 - **Deliverables**:
-  - All remaining transaction builder functions (~25+ methods)
-  - Manual BCS encoding helpers for UtxoId and OutputUtxo (double-encoding)
-  - Validator preflight checks (bitmap, signature length, cardinality, deduplication)
-  - Governance proposal type parameter resolution
-  - Snapshot tests for all PTB structures
-  - BCS round-trip tests for UtxoId/OutputUtxo double-encoding
-- **Suggested model**: opus
-
-## Cycle 6: Client Facade + Documentation + Polish
-- **Scope**: Implement HashiClient class composing all subsystems. Wire up SuiClient injection and HashiConfig DI. Configure subpath exports in package.json. Write README (quickstart, user flow, validator flow, signing guidance, upgrade notes, compatibility contract). Add TSDoc to all public functions. Integration test scaffolding. Final coverage audit (≥80% branch for high-risk modules). Set up @changesets/cli. Final build verification.
-- **Dependencies**: Cycles 1-5 (everything)
-- **Complexity**: Moderate
-- **Deliverables**:
-  - HashiClient class
-  - Subpath exports working (., ./client, ./transactions, ./queries, ./events, ./bitcoin, ./types)
-  - README with all required sections
-  - TSDoc on all public exports
-  - Integration test scaffolding (gated behind env flag)
-  - ≥80% branch coverage for high-risk modules
-  - @changesets/cli configured
-  - Clean build with dual ESM/CJS output
-- **Suggested model**: opus
+  - Hash-based URLs work for all panels (#category/operation)
+  - Coverage matrix verified: all 49 panels accessible
+  - README updated with quick-start guide
+  - All panels render without errors
+  - No TypeScript compilation errors
+- **Suggested model**: sonnet

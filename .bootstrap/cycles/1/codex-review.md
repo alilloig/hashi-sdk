@@ -1,20 +1,21 @@
 ---
-codex_verdict: "Partial pass with material issues"
-quality_rating: 3/5
+verdict: QUALIFIED PASS
+quality: 3/5
 ---
 
-## Codex Findings
+## Codex Assessment
+Agrees with PASS for the 14 explicit criteria. Qualified because:
 
-1. **PaginatedResult uses `data` instead of `items`** — spec says `items`. FIXING.
-2. **MemberInfo missing fields** — only has validatorAddress + weight, missing operator, keys, endpoint. FIXING.
-3. **Config missing upgradeCap** — FIXING.
-4. **HashiState too flat** — needs full nested shape per spec. FIXING.
-5. **DepositRequest.suiTxDigest should be string not Uint8Array** — FIXING.
-6. **WithdrawalRequest.btcBalance should be btc** — FIXING.
-7. **Config validates but doesn't normalize** — should accept and normalize non-prefixed, uppercase. FIXING.
-8. **Only 3/7 open questions resolved** — contract only required 3 minimum. Others deferred to relevant cycles.
-9. **Abort codes may be string-based for #[error] attrs** — pragmatic numeric table is acceptable foundation; will update when Q-ERROR-FORMAT resolved.
-10. **Subpath exports not in package.json yet** — intentionally deferred to Cycle 6.
+### Gaps to Address in Next Cycles
+1. **@tanstack/react-query missing** from package.json — needed for Cycle 2 queries. Must add.
+2. **Faucet panel uses getFaucetHost('devnet') instead of config.faucetUrl** — minor config centralization issue.
+3. **No network guard in UI** — ConnectButton works but no visible "Devnet" badge.
+4. **SDK link depends on pre-built dist/** — edits to SDK source won't reflect without rebuilding root package.
 
-## Resolution
-Fixing items 1-7 directly. Items 8-10 acceptable as-is for foundation cycle.
+### Assessment
+Competent scaffold, clear file structure, strict TS, sensible provider split. Foundation components are in place but thin.
+
+### Concerns for Subsequent Cycles
+- React Query needed immediately for Cycle 2
+- Transaction execution will need wallet-signing path separate from HashiClient query path
+- Hash navigation will need stronger conventions as panels multiply

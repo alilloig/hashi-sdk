@@ -1,52 +1,32 @@
 ---
 type: intent
-created: 2026-04-01T12:05:00Z
-mode: greenfield
+created: 2026-04-01T18:01:00Z
+mode: existing
 ---
 
 ## Original Prompt
-Use the report at /Users/alilloig/.claude/plans/spicy-hugging-shannon.md to create the hashi sdk
+Build a dashboard for the SDK that will allow you to interact with Hashi on devnet, include the full functionality like giving access to Sui devnet faucet and the BTC testnet faucet as well. The goal is not to have a nice UI, we have hashi frontend for that, but rather a tool that will showcase all the operations that the hashi SDK is allowing you to do. When the job is done update the readme with a quick start guide that will allow anyone cloning the repo to run locally the dashboard and check the utility of the SDK.
 
 ## User Answers
 
-**BCS Strategy**: @mysten/codegen from start — set up codegen pipeline generating types from Move package summaries. Requires running `sui move build` on the Hashi Move package.
+**Tech stack**: React + Vite with @mysten/dapp-kit-react for wallet connection. Same ecosystem as hashi-frontend.
 
-**Scope**: All 6 phases — full SDK including foundation, user-facing operations, query layer, event system, validator operations, testing, and documentation. Complete parity with the Rust transaction executor.
+**Scope**: Everything possible — all user operations (deposit, withdraw, cancel) + all queries (state, deposits, withdrawals, committee, UTXO) + all events (25 variants) + bitcoin helpers + validator/committee/governance operations (will fail without committee keys but demonstrates the full API surface) + faucets.
 
-**Bitcoin Helpers**: Full Bitcoin helpers — bech32/bech32m encoding plus deposit address derivation from MPC public key. Adds `@noble/curves` for secp256k1 point arithmetic.
+**BTC Testnet4 faucet**: Link to external faucet site. No API integration needed.
 
-**Quality Bar**: Production-grade — clean TypeScript, proper error handling with Move abort code mapping, TSDoc on public API, unit tests for BCS and transaction builders.
+**Quality bar**: Functional prototype. Works and demonstrates the SDK, minimal error handling. Ship fast.
 
 ## Derived Intent
 
-Build a comprehensive TypeScript SDK (`hashi-sdk`) for the Hashi Bitcoin bridge on Sui. The SDK translates the existing Rust `SuiTxExecutor` (1254 lines, 13 domain methods) and `hashi-types` (30 data types, 20 event types) into idiomatic TypeScript that integrates with the `@mysten/sui` ecosystem.
+Build a **developer dashboard** web app inside the hashi-sdk repo (e.g., `dashboard/` directory) that serves as an **interactive API explorer** for every operation the SDK exposes. This is NOT a user-facing product — it's a developer tool / SDK showcase.
 
-**What to build**:
-- Package scaffold with `@mysten/codegen` pipeline for BCS type generation from Move package summaries
-- Transaction builder functions following DeepBook/Walrus patterns (return `(tx: Transaction) => void`)
-- `HashiClient` convenience class accepting `SuiClient` via constructor injection
-- Complete user-facing operations: deposit, withdraw, cancel withdrawal
-- Complete validator operations: confirm deposit, approve/commit/sign/confirm withdrawal, register, reconfig, governance
-- Query layer for Hashi shared object, dynamic fields (Bags), with pagination
-- Event system with discriminated union type and BCS deserialization for all 20 event types
-- Bitcoin address helpers (bech32/bech32m encoding) and deposit address derivation (secp256k1 via @noble/curves)
-- Move abort code mapping to human-readable error messages
-- Production-grade unit tests (BCS round-trips, event parsing, builder snapshots)
-- TSDoc on all public API surfaces
-
-**Key constraints**:
-- Must use `@mysten/codegen` (not manual BCS) as the type generation foundation
-- Must be signing-agnostic (never hold private keys, compatible with dapp-kit wallets)
-- Must follow Mysten ecosystem conventions (DeepBook v3, Walrus SDK patterns)
-- Single package architecture with tree-shakeable modules
-- Network presets (testnet, mainnet) with override capability
-- `originalPackageId` for StructTags, current `packageId` for Move call targets
-
-**Reference codebases**:
-- Hashi Rust/Move: `/Users/alilloig/workspace/hashi/worktrees/alilloig/sdk/`
-- Mysten TS SDKs (DeepBook, Walrus patterns): `~/workspace/ts-sdks/`
-
-**Target audience**: Full spectrum — dApp developers (deposit/withdraw/query) and validator operators (committee management, governance).
-
-**Runtime dependencies**: `@mysten/sui`, `@mysten/bcs`, `@noble/curves`
-**Dev dependencies**: `@mysten/codegen`, `@mysten/build-scripts`, `typescript` ≥5.x, `vitest`, `@changesets/cli`
+### Key Characteristics
+- **React + Vite** app with `@mysten/dapp-kit-react` for Sui wallet connection
+- **Consumes hashi-sdk locally** (workspace link, not published package)
+- **Targets Sui devnet** with hardcoded devnet config (package ID, Hashi object ID from `.env.devnet`)
+- **Every SDK operation gets a panel/form** — even validator/governance ops that require committee keys
+- **Sui devnet faucet** button (uses `@mysten/sui` requestSuiFromFaucet or similar)
+- **BTC Testnet4 faucet** as external link
+- **Functional prototype quality** — works, shows results, minimal polish
+- **README update** with quick start guide for running the dashboard locally

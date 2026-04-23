@@ -2,88 +2,74 @@
 cycle: 4
 iteration: 1
 status: DONE
-timestamp: 2026-04-01T14:15:00Z
+timestamp: 2026-04-01T17:00:00Z
 ---
 
 ## What I Implemented
 
-Complete query layer for reading on-chain Hashi state via Sui RPC. All queries use the @mysten/sui v2 `CoreClient` API (`getObject`, `getDynamicField`, `listDynamicFields`) since Hashi has no public view functions. BCS deserialization uses the codegen types from `src/contracts/`.
+Built all 31 transaction builder panels across 6 categories, plus 3 shared input components and shared panel utilities. All routes wired in App.tsx.
 
 ## Contract Criteria Addressed
 
-1. **src/queries/ directory with query functions**: Created 7 files: `helpers.ts`, `state.ts`, `deposits.ts`, `withdrawals.ts`, `committee.ts`, `utxo.ts`, `index.ts`
+- **Criterion 1: All 6 panel files created with all 31 operations**
+  - `ValidatorPanel.tsx` — 6 operations (register, updatePublicKey, updateOperatorAddress, updateEndpointUrl, updateTlsPublicKey, updateEncryptionPublicKey)
+  - `CommitteeDepositsPanel.tsx` — 2 operations (confirmDeposit, deleteExpiredDeposits)
+  - `CommitteeWithdrawalsPanel.tsx` — 5 operations (approveWithdrawalRequests, commitWithdrawalTx, signWithdrawal, confirmWithdrawal, deleteExpiredSpentUtxo)
+  - `ReconfigPanel.tsx` — 2 operations (startReconfig, endReconfig)
+  - `CertificatePanel.tsx` — 4 operations (submitDkgCert, submitRotationCert, submitNonceCert, destroyAllCerts)
+  - `GovernancePanel.tsx` — 12 operations (proposeUpdateConfig, proposeEnableVersion, proposeDisableVersion, proposeUpgrade, vote, removeVote, deleteExpiredProposal, executeUpdateConfig, executeEnableVersion, executeDisableVersion, executeUpgrade, finalizeUpgrade)
+  - Total: 6 + 2 + 5 + 2 + 4 + 12 = 31
 
-2. **getHashiState()**: Fetches root Hashi object via `getObject` with `include: { content: true }`, deserializes full nested structure (CommitteeSet, Config, Treasury, DepositRequestQueue, WithdrawalRequestQueue, UtxoPool, Bags). Throws `HashiQueryError` if not found.
+- **Criterion 2: All 6 hash routes wired in App.tsx**
+  - `#validator-management` -> ValidatorPanel
+  - `#committee-deposits` -> CommitteeDepositsPanel
+  - `#committee-withdrawals` -> CommitteeWithdrawalsPanel
+  - `#reconfiguration` -> ReconfigPanel
+  - `#certificate-operations` -> CertificatePanel
+  - `#governance` -> GovernancePanel
 
-3. **getDepositRequest(id)**: Looks up from deposit queue Bag using `getDynamicField` with address key type. Returns `DepositRequest | null`.
+- **Criterion 3: Shared committee signature input component exists**
+  - `src/components/CommitteeSignatureInputs.tsx` — reusable group with epoch, BLS signature (hex), and signers bitmap (hex) fields. Used by confirmDeposit, approveWithdrawalRequests, commitWithdrawalTx, signWithdrawal, confirmWithdrawal, endReconfig, and all certificate operations.
 
-4. **listDepositRequests({ cursor?, limit? })**: Uses `listDynamicFields` for pagination, then fetches each field value. Returns `PaginatedResult<DepositRequest>`.
+- **Criterion 4: Batch ID input component exists for multi-ID operations**
+  - `src/components/BatchIdInput.tsx` — dynamic list with add/remove buttons. Used by deleteExpiredDeposits, approveWithdrawalRequests, commitWithdrawalTx request IDs, and signWithdrawal request IDs.
 
-5. **getWithdrawalRequest(id)**: Looks up from withdrawal queue requests Bag. Returns `WithdrawalRequest | null`.
+- **Criterion 5: CommitWithdrawalTx handles nested inputs**
+  - The commitWithdrawalTx panel has:
+    - BatchIdInput for request IDs
+    - Nested UTXO input group (txid + vout per entry, add/remove)
+    - Nested output group (amount + bitcoinAddress per entry, add/remove)
+    - Bitcoin txid field
+    - CommitteeSignatureInputs group
+  - All nested arrays support dynamic add/remove with proper state management.
 
-6. **listPendingWithdrawals({ cursor?, limit? })**: Paginates over pending withdrawals Bag. Returns `PaginatedResult<PendingWithdrawal>`.
+- **Criterion 6: All panels show committee authority warning**
+  - `AuthorityWarning` component from `shared.tsx` is displayed at the top of every panel with the message: "These operations require {role} authority and will likely fail on devnet without proper signing keys."
+  - Validator panel uses role="validator", deposit/withdrawal panels use role="committee", reconfig/cert/governance panels use role="committee/validator".
 
-7. **getCommittee(epoch?)**: Looks up committee by u64 epoch key. Defaults to current epoch from Hashi state if not provided.
-
-8. **getMemberInfo(validatorAddress)**: Looks up from committee set members Bag using address key.
-
-9. **getConfig()**: Convenience wrapper that fetches HashiState and extracts/converts the Config section with proper ConfigValue enum conversion.
-
-10. **getUtxo(txid, vout)**: Looks up from active UTXOs Bag using struct key type `{originalPackageId}::utxo::UtxoId`.
-
-11. **All queries accept CoreClient + HashiConfig**: Every query function takes `(client: CoreClient, config: HashiConfig, ...)` as its first two parameters.
-
-12. **Not-found returns null, errors throw**: Dynamic field lookups return `null` on not-found. BCS decode failures throw `HashiParseError`. RPC errors throw `HashiQueryError`. Root state object not-found throws `HashiQueryError` (it must exist).
-
-13. **PaginatedResult uses { items, nextCursor, hasNextPage }**: Both list functions return this shape.
-
-14. **Unit tests with mock RPC responses**: 27 tests covering all query functions with BCS fixtures generated from codegen types.
-
-15. **npx tsc --noEmit exits 0**: Verified.
-
-16. **npx vitest run exits 0**: All 195 tests pass (27 new query tests + 168 existing).
+- **Criterion 7: TypeScript compiles clean**
+  - `npx tsc --noEmit` exits 0
+  - `npx vite build` exits 0
 
 ## Tests Written and Results
 
-- `npx tsc --noEmit` -> exits 0, no errors
-- `npx vitest run` -> 195 tests passed (7 test files), 0 failures
-
-Test coverage for queries:
-- getHashiState: correct deserialization, config entries, not-found error, invalid BCS error, RPC error
-- getConfig: correct structure extraction
-- getDepositRequest: correct deserialization, null on not-found, parse error on bad BCS
-- listDepositRequests: empty list, paginated with items and cursor
-- getWithdrawalRequest: correct deserialization with nested types, null on not-found
-- listPendingWithdrawals: empty list, items with nested structures
-- getCommittee: current epoch default, explicit epoch, null on not-found
-- getMemberInfo: correct deserialization, null on not-found
-- getUtxo: correct deserialization, null derivation path, struct key type verification
-- Error handling: RPC errors wrapped, BCS errors wrapped, dynamic field errors wrapped
+- `npx tsc --noEmit` (from dashboard/) -> exit 0, no errors
+- `npx vite build` (from dashboard/) -> exit 0, built successfully (667 kB)
 
 ## Files Changed
 
-- `src/queries/helpers.ts` -- Shared utilities: BCS fetch/parse, dynamic field access, type conversion (BCS strings to bigint, arrays to Uint8Array), error detection
-- `src/queries/state.ts` -- getHashiState, getConfig with full nested BCS-to-domain conversion
-- `src/queries/deposits.ts` -- getDepositRequest, listDepositRequests
-- `src/queries/withdrawals.ts` -- getWithdrawalRequest, listPendingWithdrawals with all nested types
-- `src/queries/committee.ts` -- getCommittee (with epoch default), getMemberInfo
-- `src/queries/utxo.ts` -- getUtxo with struct key serialization
-- `src/queries/index.ts` -- Barrel exports
-- `src/index.ts` -- Added query function exports to main SDK entry point
-- `tests/queries.test.ts` -- 27 unit tests with mock clients and BCS fixtures
+- `dashboard/src/components/HexInput.tsx` — New shared component for hex-validated text inputs with hexToBytes utility
+- `dashboard/src/components/BatchIdInput.tsx` — New shared component for dynamic ID lists with add/remove
+- `dashboard/src/components/CommitteeSignatureInputs.tsx` — New shared component for epoch + signature + bitmap group
+- `dashboard/src/panels/shared.tsx` — Extracted shared styles, AuthorityWarning, renderTransactionResult, ActionButtons from UserOperationsPanel pattern
+- `dashboard/src/panels/ValidatorPanel.tsx` — 6 validator management operations
+- `dashboard/src/panels/CommitteeDepositsPanel.tsx` — 2 deposit committee operations
+- `dashboard/src/panels/CommitteeWithdrawalsPanel.tsx` — 5 withdrawal committee operations including complex commitWithdrawalTx
+- `dashboard/src/panels/ReconfigPanel.tsx` — 2 reconfiguration operations
+- `dashboard/src/panels/CertificatePanel.tsx` — 4 certificate submission operations
+- `dashboard/src/panels/GovernancePanel.tsx` — 12 governance lifecycle operations
+- `dashboard/src/App.tsx` — Added imports for all 6 new panels and wired hash routes
 
 ## Commits
 
-- `71af165` -- feat: add query layer for reading on-chain Hashi state via Sui RPC
-
-## Design Decisions
-
-**Client type**: Used `CoreClient` from `@mysten/sui/client` rather than the legacy `SuiClient`. This is the v2 API that provides `getObject`, `getDynamicField`, and `listDynamicFields` as abstract/concrete methods. Works with JSON-RPC, GraphQL, and gRPC backends.
-
-**BCS content access**: In @mysten/sui v2, `getObject` with `include: { content: true }` returns `content` as `Uint8Array` (raw BCS bytes), not the base64 format from v1. The codegen `BcsStruct.parse()` accepts `Uint8Array` directly.
-
-**Dynamic field key format**: The v2 `getDynamicField` API takes `name: { type: string, bcs: Uint8Array }` where `bcs` is the raw serialized key bytes (not JSON). For address keys, we serialize with `bcs.Address.serialize()`. For u64 keys, with `bcs.u64().serialize()`. For struct keys (UtxoId), with the codegen struct's `.serialize()`.
-
-**Type conversion**: BCS v2 deserializes u64 as strings and vector<u8> as number[]. All conversions to domain types (bigint, Uint8Array) are done in explicit converter functions per module.
-
-**List queries**: Each list query first fetches the HashiState to get the Bag ID, then lists dynamic fields for pagination, then fetches each field individually to get BCS content. This is N+2 RPC calls per page (1 for state, 1 for listing, N for field values).
+- `9ea19e3` — feat: add all 31 validator/committee/governance transaction panels

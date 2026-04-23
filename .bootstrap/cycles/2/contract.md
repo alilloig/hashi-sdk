@@ -1,30 +1,32 @@
 ---
 cycle: 2
-name: User-Facing Transaction Builders
+name: Queries Panel
 ---
 
 ## Scope
-Implement the three user-facing transaction builder functions: createDepositRequest, requestWithdrawal, cancelWithdrawal. Add shared-object argument helpers and input validation.
+Install `@tanstack/react-query` (gap from Cycle 1). Implement all 9 query operation panels using the shared OperationPanel + JsonViewer components. Include paginated list queries with cursor controls. Wire the #queries hash route in App.tsx.
 
 ## Completion Criteria
 
-1. [ ] `src/transactions/` directory exists with transaction builder functions
-2. [ ] `createDepositRequest({ txid, vout, amount, derivationPath? })` implements the 5-step PTB: utxo_id → utxo → deposit_request → splitCoins fee → deposit
-3. [ ] `requestWithdrawal({ amount, bitcoinAddress })` uses CoinWithBalance intent for BTC coin with the correct StructTag using originalPackageId, plus withdraw::request_withdrawal call
-4. [ ] `cancelWithdrawal({ requestId })` calls withdraw::cancel_withdrawal, captures the returned Coin<BTC>, and transfers it to sender via transferObjects
-5. [ ] All three builders return `(tx: Transaction) => void | TransactionResult` (the canonical builder type)
-6. [ ] Shared object helpers exist for Hashi (mutable), Clock 0x6 (immutable)
-7. [ ] Input validation: address format (normalize to canonical), byte lengths, bigint/number bounds (non-negative, u64 range), txid (32 bytes)
-8. [ ] `requestWithdrawal` accepts bitcoinAddress as either Uint8Array (raw witness program) or string (deferred bech32 decoding — raw bytes only for now since bitcoin helpers come in Cycle 3)
-9. [ ] Snapshot tests exist for all 3 PTB structures
-10. [ ] Input validation error tests pass (invalid addresses, wrong byte lengths, negative amounts)
-11. [ ] `npx tsc --noEmit` exits 0
-12. [ ] `npx vitest run` exits 0 with all tests passing
+1. [ ] `@tanstack/react-query` is in package.json dependencies and installed
+2. [ ] A `QueryClientProvider` wraps the app (or is integrated with dapp-kit's existing provider)
+3. [ ] The #queries hash route renders a QueriesPanel component with all 9 query sub-panels
+4. [ ] `getHashiState` panel: button that fetches and displays full bridge state as JSON
+5. [ ] `getConfig` panel: button that fetches and displays bridge config as JSON
+6. [ ] `getDepositRequest` panel: text input for request ID, button to fetch, displays result or "Not found"
+7. [ ] `listDepositRequests` panel: button to fetch first page, next/prev pagination controls, displays list as JSON
+8. [ ] `getWithdrawalRequest` panel: text input for request ID, button to fetch, displays result or "Not found"
+9. [ ] `listPendingWithdrawals` panel: button to fetch first page, next/prev pagination controls, displays list as JSON
+10. [ ] `getCommittee` panel: optional epoch input, button to fetch current committee, displays result as JSON
+11. [ ] `getMemberInfo` panel: text input for validator address, button to fetch, displays result or "Not found"
+12. [ ] `getUtxo` panel: text inputs for txid and vout, button to fetch, displays result or "Not found"
+13. [ ] All query panels show loading state while fetching
+14. [ ] All query panels show errors via ErrorDisplay when queries fail
+15. [ ] TypeScript compiles with no errors (`npx tsc --noEmit` exits 0)
 
 ## Verification Commands
-- `npx tsc --noEmit` — verifies criterion 11
-- `npx vitest run` — verifies criteria 9, 10, 12
-- `ls src/transactions/` — verifies criterion 1
+- `cd /Users/alilloig/workspace/hashi-sdk/dashboard && npx tsc --noEmit` — verifies criteria 15
+- `npm run dev` and navigate to #queries — verifies criteria 3-14 visually
 
 ## Context from Previous Cycles
-Cycle 1 built: package scaffold, codegen output in src/contracts/ (BCS types + function wrappers for all 24 Move modules), HashiConfig with address normalization, error hierarchy, domain type interfaces, build pipeline. The codegen wrappers in src/contracts/hashi/ provide typed Move call helpers that can be used by the transaction builders.
+Cycle 1 built the app shell with sidebar, header, wallet connect, HashiClient provider, and shared components (OperationPanel, JsonViewer, ErrorDisplay). The HashiClient is available via `useHashiClient()` hook. Query functions are imported from `hashi-sdk/queries`.

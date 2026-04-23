@@ -1,294 +1,230 @@
-# Planning Prompt (Final)
+# Planning Prompt v3 (Final)
 
-Generate a rigorous implementation specification for `hashi-sdk`, a production-grade TypeScript SDK for the Hashi Bitcoin-on-Sui bridge.
+You are a senior architect generating an implementation-ready project specification for a **developer dashboard** inside the `hashi-sdk` repository.
 
-Your output is a project specification, not code. Write it as an engineering design document with concrete decisions, explicit assumptions, and clear acceptance criteria.
+Produce a concrete spec that a developer can execute with minimal ambiguity. Optimize for completeness, implementation clarity, and accurate SDK coverage over product polish.
 
-## Document Requirements
+## Objective
 
-Produce these sections in order:
-1. Executive summary
-2. Goals and non-goals
-3. Assumptions and external dependencies
-4. Architecture and package layout
-5. Public API surface
-6. Transaction-building design
-7. Query/read-layer design
-8. Event parsing design
-9. Bitcoin helper design
-10. Type system and conversion strategy
-11. Error model
-12. Build, packaging, and module exports
-13. Testing and CI strategy
-14. Documentation plan
-15. Release/versioning plan
-16. Risks, open questions, and future extension points
-17. Phase-based implementation plan with milestones and acceptance criteria
+Design a React + Vite dashboard at `dashboard/` that exposes **every operation in the local TypeScript `hashi-sdk`** as an interactive developer tool targeting **Sui devnet**.
 
-## Output Quality Bar
+This is an SDK explorer for engineers — not a marketing site or polished product. It must use the local workspace-linked SDK as the source of truth.
 
-- Use RFC-style language: `MUST`, `SHOULD`, `MAY`.
-- Separate hard requirements from recommendations.
-- Be specific enough that an engineer could implement from the spec without guessing core behavior.
-- Call out unresolved items explicitly instead of hand-waving.
-- Include tradeoffs where multiple valid designs exist, then choose one and justify.
-- Where behavior depends on inspecting the external Move package, mark it as an assumption to validate.
+## Product Intent
 
-## Project Context
+The dashboard lets a developer:
+- Connect a Sui wallet
+- Browse SDK capabilities by category
+- Fill forms for each operation with typed inputs
+- Build transactions and inspect them before signing
+- Execute wallet-backed flows
+- Run read-only queries and view raw JSON results
+- Subscribe to and parse events
+- Use Bitcoin helper utilities interactively
+- Understand failures through surfaced SDK errors
 
-`hashi-sdk` is a TypeScript SDK for the Hashi Bitcoin-on-Sui bridge — a Sui-native bridge where users deposit native BTC to receive hBTC (`Coin<BTC>`) on Sui, and withdraw by burning hBTC. A committee of Sui validators operates the bridge via threshold MPC (BLS12-381 Schnorr) with a Guardian 2-of-2 Taproot multisig.
+## Repo / Runtime Constraints
 
-The Hashi codebase is purely Rust + Move (~40k lines Rust, 24 Move modules). This TypeScript SDK is built from scratch in a standalone repository.
+- Lives at `dashboard/` inside the SDK repo
+- Consumes `hashi-sdk` via `"hashi-sdk": "file:.."` in package.json
+- Targets Sui devnet only (config isolated for future expansion)
+- TypeScript throughout
+- Minimal styling — developer-functional, not beautiful
+- No automated tests for v1
+- Update repo README with dashboard quick-start
 
-**Target audience**: Full spectrum — dApp developers (deposit, withdraw, query) and validator operators (committee management, governance).
+## Required Tech Stack
 
-## Hard Requirements
+- React 18+ with Vite
+- TypeScript
+- `@mysten/dapp-kit-react` for wallet connection
+- `@tanstack/react-query` (peer dep of dapp-kit)
+- Local `hashi-sdk` workspace package
 
-### Architecture
+## Devnet Configuration (Hardcoded)
 
-MUST use this package structure:
-```text
-src/
-  client.ts          — HashiClient class (top-level convenience API)
-  contracts/         — @mysten/codegen output (BCS types + Move function wrappers)
-  transactions/      — Hand-written domain transaction classes per module
-  queries/           — Read/query layer for on-chain state
-  events/            — Event parsing and discriminated union types
-  types/             — TypeScript domain interfaces + BCS re-exports from contracts/
-  utils/             — Config class, constants, network presets
-  errors.ts          — Typed error hierarchy with Move abort code mapping
-  bitcoin.ts         — bech32/bech32m encoding + deposit address derivation
-```
+- Hashi Package ID: `0xe87f0c85488c5c442612103a08e5df93d2f190cdb0456b667f5257be506aefc7`
+- Hashi Object ID: `0x3b8013407b5caaceb9dbfce56c45987c8e778c2302fc712bd52db093f5997c04`
+- Sui RPC: `https://fullnode.devnet.sui.io`
+- Bitcoin Network: Testnet4 (`tb1p` prefix, bech32m)
 
-The spec MUST define:
-- What each directory owns and its responsibility boundary
-- Which modules are public (exported from package root or subpath exports)
-- Which modules are internal-only (consumed within the package but not exported)
-- How tree-shakable imports are preserved
+## Critical Requirement: Full SDK Coverage
 
-### Codegen Foundation
+The spec MUST enumerate operations from the actual SDK source. For each operation, identify:
+1. Which SDK function/method it wraps
+2. Its invocation mode:
+   - **pure utility** — local computation, no network
+   - **read-only query** — SuiClient call, no wallet
+   - **build-only transaction** — constructs TX for inspection only
+   - **build + sign + execute transaction** — full wallet flow
+   - **event parser** — transforms raw event data
+   - **live subscription** — ongoing event stream
+3. Which dashboard panel hosts it
 
-- `@mysten/codegen` MUST be the primary type and function generation mechanism.
-- A `sui-codegen.config.ts` MUST exist at package root, targeting the external Hashi Move package via configurable relative path.
-- Generated output MUST live in `src/contracts/`.
-- Manual wrappers/helpers MUST be limited to cases codegen cannot express:
-  - Nested BCS double-encoding for `commit_withdrawal_tx` (`vector<vector<u8>>` with BCS-encoded `UtxoId` and `OutputUtxo`)
-  - Multi-step PTB orchestration (5-step deposit, two-call confirm_deposit)
-  - CoinWithBalance intent usage in `requestWithdrawal`
-  - TransferObjects for `cancelWithdrawal` refund
-- The spec MUST identify what is generated vs handwritten per directory.
+Produce a **coverage matrix** mapping every exported SDK operation to a dashboard panel. Call out any operations intentionally excluded with rationale.
 
-### Client and Config
+**Source-of-truth rule**: If the provided operation list below differs from the actual SDK exports, the SDK source is authoritative. The spec must list mismatches and how they are handled.
 
-- `HashiClient` MUST accept an injected `SuiClient` (from `@mysten/sui/client`).
-- `HashiConfig` MUST support `'mainnet' | 'testnet'` presets plus explicit overrides for custom networks (devnet, localnet).
-- Config MUST track:
-  - `packageId` — current package address (for Move call targets, changes on upgrade)
-  - `originalPackageId` — first published address (stable, for StructTags like `{originalPkg}::btc::BTC`)
-  - `hashiObjectId` — the shared Hashi object (stable across upgrades)
-- The spec MUST define validation rules for config values (format, length, 0x-prefix).
-- The spec MUST define how multi-version package support works for event parsing across upgrades.
+## SDK Operations by Category
 
-### Transaction API
+### Faucets
+- Sui devnet faucet: button that calls `requestSuiFromFaucet` or hits the devnet faucet endpoint
+- BTC Testnet4 faucet: external link to known Testnet4 faucet
 
-The SDK MUST be signing-agnostic — it builds `Transaction` content only, never holds private keys. Compatible with both server-side `SuiClient.signAndExecuteTransaction()` and browser dapp-kit wallet signing.
+### User Transactions (wallet-execute)
+- `createDepositRequest` — form: sender, txid, vout, amount, recipient
+- `requestWithdrawal` — form: BTC address, amount (in sats)
+- `cancelWithdrawal` — form: withdrawal request ID, recipient
 
-**Builder contract — the spec MUST define:**
-- One canonical builder return type used uniformly across ALL write APIs. Choose between `(tx: Transaction) => void` or `(tx: Transaction) => TransactionResult`, and use it consistently. Name it (e.g., `HashiTransactionPlugin`).
-- Whether builders perform eager validation before closure creation. Recommendation: validate input format synchronously (address format, byte lengths), defer semantic validation to on-chain execution.
-- Whether any builder returns handles to newly created on-chain objects, and if so, how (via TransactionResult or event parsing post-execution).
+### Queries (read-only)
+- `getHashiState` — button, display full state
+- `getConfig` — button, display config entries
+- `getDepositRequest` — form: request ID → single result
+- `listDepositRequests` — paginated with cursor controls
+- `getWithdrawalRequest` — form: request ID → single result
+- `listPendingWithdrawals` — paginated with cursor controls
+- `getCommittee` — button (current epoch) + optional epoch input
+- `getMemberInfo` — form: validator address
+- `getUtxo` — form: txid + vout
 
-**User-facing operations** (callable by anyone):
-1. `createDepositRequest({ txid, vout, amount, derivationPath? })` — 5-step PTB: `utxo::utxo_id()` → `utxo::utxo()` → `deposit_queue::deposit_request()` → `splitCoins(gas, [0])` for fee → `deposit::deposit()`
-2. `requestWithdrawal({ amount, bitcoinAddress })` — `CoinWithBalance` intent for BTC coin + `withdraw::request_withdrawal()`. Bitcoin address accepted as human-readable bech32/bech32m string OR raw `Uint8Array` witness program.
-3. `cancelWithdrawal({ requestId })` — `withdraw::cancel_withdrawal()` → captures returned `Coin<BTC>` → `transferObjects([coin], sender)`
+### Events
+- Live subscription via Sui RPC event subscription
+- Parse incoming events using `parseHashiEvent`
+- Display parsed events with type discrimination
+- Filter by event variant (25 types)
+- Manual parse mode: paste raw event JSON → parse and display
 
-**Validator/committee operations** (entry functions, committee signature required):
-4. `confirmDeposit({ requestId, epoch, signature, signersBitmap })` — Two-call PTB: `committee::new_committee_signature(epoch, sig, bitmap)` → `deposit::confirm_deposit(hashi, requestId, committeeSig)`
-5. `deleteExpiredDeposits({ requestIds })` — Batched: multiple `deposit::delete_expired_deposit(hashi, id, clock)` calls in one PTB
-6. `approveWithdrawalRequests({ approvals: Array<{requestId, epoch, signature, signersBitmap}> })` — Batched in single PTB
-7. `commitWithdrawalTx({ requestIds, selectedUtxos, outputs, txid, epoch, signature, signersBitmap })` — Nested BCS: each `UtxoId` and `OutputUtxo` individually BCS-encoded to `Uint8Array`, then passed as `vector<vector<u8>>`. Requires Clock (`0x6`) + Random (`0x8`).
-8. `signWithdrawal({ withdrawalId, requestIds, signatures, epoch, signature, signersBitmap })`
-9. `confirmWithdrawal({ withdrawalId, epoch, signature, signersBitmap })`
-10. `deleteExpiredSpentUtxo({ txid, vout })`
-11. `register()` — `validator::register(hashi, suiSystem)` with SuiSystem `0x5`
-12. `updatePublicKey/updateOperatorAddress/updateEndpointUrl/updateTlsPublicKey/updateEncryptionPublicKey` — 5 separate methods
-13. `startReconfig()` / `endReconfig({ mpcPublicKey, signature, signersBitmap })`
-14. `submitDkgCert/submitRotationCert/submitNonceCert` / `destroyAllCerts`
-15. Governance: `proposeUpdateConfig/proposeEnableVersion/proposeDisableVersion/proposeUpgrade` + `vote<T>` / `removeVote<T>` / `deleteExpiredProposal<T>` / `executeProposal<T>`
+### Bitcoin Helpers (pure utility, no wallet needed)
+- `encodeBitcoinAddress` — form: witness program (hex), witness version, network
+- `decodeBitcoinAddress` — form: Bitcoin address string
+- `satsToBtc` — form: satoshis input
+- `btcToSats` — form: BTC string input
 
-**Excluded**: `abort_reconfig` (always aborts on-chain), `finish_publish` (one-time deploy function).
+### Validator Operations (wallet-execute)
+- `register` — button
+- `updatePublicKey` — form: new public key bytes
+- `updateOperatorAddress` — form: new operator address
+- `updateEndpointUrl` — form: new URL bytes
+- `updateTlsPublicKey` — form: new TLS key bytes
+- `updateEncryptionPublicKey` — form: new encryption key bytes
 
-### Query Layer
+### Committee/Deposit Operations (wallet-execute)
+- `confirmDeposit` — form: deposit request ID, committee signature fields
+- `deleteExpiredDeposits` — form: deposit request IDs (batch)
 
-Because Hashi exposes NO public view functions, ALL reads MUST use Sui RPC object queries.
+### Committee/Withdrawal Operations (wallet-execute)
+- `approveWithdrawalRequests` — form: request IDs (batch)
+- `commitWithdrawalTx` — form: complex nested inputs (requests, outputs, fee)
+- `signWithdrawal` — form: pending withdrawal ID, signatures, bitmap
+- `confirmWithdrawal` — form: pending withdrawal ID, txid, vout
+- `deleteExpiredSpentUtxo` — form: UTXO IDs (batch)
 
-**Pagination contract**: All list APIs MUST use one shared pagination result type:
-```typescript
-interface PaginatedResult<T> {
-  items: T[];
-  nextCursor: string | null;
-  hasNextPage: boolean;
-}
-```
-The spec MUST define ordering guarantees for each list method.
+### Reconfiguration (wallet-execute)
+- `startReconfig` — button (uses SuiSystem shared object)
+- `endReconfig` — form: committee signature fields
 
-**Error semantics for queries**:
-- Object not found → return `null` (singular getters only)
-- Invalid input (malformed address, bad config) → throw `HashiConfigError` or `HashiQueryError`
-- BCS decode failure → throw `HashiParseError`
-- RPC transport failure → throw `HashiQueryError`
+### Certificate Operations (wallet-execute)
+- `submitDkgCert` — form: cert data bytes
+- `submitRotationCert` — form: cert data bytes
+- `submitNonceCert` — form: cert data bytes
+- `destroyAllCerts` — form: epoch
 
-The spec MUST define for each query: exact return type shape (domain types only), deserialization path, and which BCS types are used.
+### Governance (wallet-execute)
+- `proposeUpdateConfig` — form: config key, value
+- `proposeEnableVersion` — form: version number
+- `proposeDisableVersion` — form: version number
+- `proposeUpgrade` — form: upgrade params
+- `vote` — form: proposal ID, proposal type
+- `removeVote` — form: proposal ID, proposal type
+- `deleteExpiredProposal` — form: proposal ID, proposal type
+- `executeUpdateConfig` / `executeEnableVersion` / `executeDisableVersion` / `executeUpgrade` — form: proposal ID
+- `finalizeUpgrade` — form: upgrade receipt
 
-Required queries:
-- `getHashiState()` → root Hashi object with Bag IDs
-- `getDepositRequest(id)` → single deposit request | null
-- `listDepositRequests({ cursor?, limit? })` → PaginatedResult<DepositRequest>
-- `getWithdrawalRequest(id)` → single withdrawal request | null
-- `listPendingWithdrawals({ cursor?, limit? })` → PaginatedResult<PendingWithdrawal>
-- `getCommittee(epoch?)` → Committee (current epoch if omitted) | null
-- `getMemberInfo(validatorAddress)` → MemberInfo | null
-- `getConfig()` → typed config object (not VecMap)
-- `getUtxo(txid, vout)` → Utxo | null
-- `getEpochCerts(epoch, batchIndex?)` → EpochCerts | null
+## What the Spec Must Cover
 
-### Event System
+### 1. App Architecture
+- Directory structure under `dashboard/`
+- Package.json wiring (file: link to SDK)
+- Environment and config strategy (isolated for network expansion)
+- How Sui client, wallet provider, and HashiClient are initialized
+- State management: React Query for server state, local state for forms
 
-The spec MUST define:
-- A discriminated union `HashiEvent` with all 24 variants. The discriminant MUST be a string literal `type` field (e.g., `type: 'DepositRequested'`).
-- `parseHashiEvent(event: SuiEvent, packageIds: Set<string>): HashiEvent | null` — best-effort public parser, returns `null` for unknown events.
-- A stricter internal/debug parser or a result shape that includes parse failure reasons (e.g., `parseHashiEventStrict(): HashiEvent | ParseError`).
-- Package-version matching: accept `Set<string>` of all known package IDs.
-- Generic type parameter extraction for proposal events and treasury events.
-- The exact discriminant fields and union shape.
+### 2. Navigation & Layout
+- Sidebar or tab navigation grouping operations by category
+- Wallet connect button in header
+- Each category expands to show its operations
+- Active panel displays in main content area
+- Single-page shell or lightweight routed dashboard; justify the choice
 
-### Bitcoin Helpers
+### 3. Operation Execution Model
+Distinguish and handle:
+- **Pure utility**: call function, display result. No wallet needed.
+- **Read-only query**: call with SuiClient, display JSON result. No wallet needed.
+- **Transaction builder**: build TX → inspect → sign & execute. Wallet required.
+- **Event subscription**: start/stop lifecycle, accumulate parsed events in a log.
 
-- `encodeBitcoinAddress(witnessProgram, witnessVersion, network)` — bech32m for v1+ (Taproot), bech32 for v0 (SegWit)
-- `decodeBitcoinAddress(address)` → `{ witnessProgram, witnessVersion, network }`
-- `deriveDepositAddress(mpcPublicKey, derivationPath, network)` — Taproot address via secp256k1 (`@noble/curves`)
-- `satsToBtc(sats)` and `btcToSats(btc)`
-- Only 20-byte (P2WPKH, v0) and 32-byte (P2TR, v1) witness programs MUST be supported
-- Throw `HashiBitcoinError` for invalid/unsupported inputs
+For transaction flows:
+- Build the transaction and display serialized TX details
+- User clicks "Sign & Execute" to submit via wallet
+- Display transaction digest and effects on success
+- Display full error on failure
 
-### Type System
+### 4. Shared Components
+- `OperationPanel` — shell with title, description, form, result area
+- `JsonViewer` — render JSON with basic formatting (pre tag is fine)
+- `TransactionPreview` — show built transaction details before signing
+- `ErrorDisplay` — render HashiError hierarchy info
+- `PaginatedList` — cursor-based pagination controls
+- `EventLog` — scrolling log of parsed events with type badges
+- `WalletGuard` — show "connect wallet" message for wallet-required operations
 
-Three-layer model: Codegen → Domain → Conversion.
+### 5. Form Strategy
+- Justify whether forms are schema-driven, config-driven, or hand-authored per operation
+- Define where reuse stops being worth it
+- Define shared infrastructure boundaries: hooks/runner layer, operation metadata layer, per-operation adapters
 
-**Canonical type mappings** (the spec MUST use these, no ambiguity):
+### 6. Error Handling
+- Display SDK error type (HashiConfigError, HashiTransactionError, etc.)
+- Show abort code mapping when available
+- Distinguish validation errors (before TX build) from execution errors (after submit)
+- Show raw error details in expandable section
 
-| Move Type | TypeScript Type | Rationale |
-|---|---|---|
-| `address` | `string` (0x-prefixed, lowercase, 66 chars) | `@mysten/sui` convention |
-| `u64` | `bigint` | Precision safety |
-| `vector<u8>` | `Uint8Array` | Standard binary |
-| `Option<T>` | `T \| null` | Idiomatic TS |
-| `Bag` | `{ id: string; size: number }` | Contents via dynamic field queries |
-| `VecMap<K,V>` | `Array<{ key: K; value: V }>` | Preserves insertion order |
-| `VecSet<T>` | `T[]` | Simple array |
-| `CommitteeSignature` | `{ epoch: bigint; signature: Uint8Array; signersBitmap: Uint8Array }` | Flat |
-| `ConfigValue` | Discriminated union with `type` field | Match Move enum |
+### 6. Acceptance Criteria
+1. `npm run dev` starts the dashboard at localhost
+2. Wallet connects via dapp-kit
+3. Sui devnet faucet button dispenses SUI to connected wallet
+4. BTC faucet link opens external faucet
+5. At least one query (getHashiState) returns and displays data
+6. Paginated queries show next/prev controls
+7. Transaction builder forms produce inspectable TX
+8. Sign & execute submits to devnet
+9. Bitcoin helpers encode/decode correctly
+10. Event subscription receives and parses events
+11. All SDK operations have a corresponding panel (coverage matrix satisfied)
+12. README has working quick-start guide (install, run, wallet prereqs, devnet assumptions, known limitations)
+13. Coverage verification: every exported SDK operation is mapped in the coverage matrix or explicitly excluded with rationale
 
-**Normalization rules — the spec MUST define canonical public input forms for:**
-- Sui addresses and object IDs: accepted string format (with/without 0x prefix, case, length), normalization behavior (lowercase, pad to 66 chars)
-- Bitcoin txids: display order vs internal byte order, accepted string format, reversal policy
-- Byte arrays: whether public APIs accept hex strings, Uint8Array, or both
-- `u64` inputs: whether string or number inputs are accepted in addition to bigint, and bounds checking behavior
+### 7. Implementation Phases
+Provide 3-6 ordered phases building from foundation to full coverage.
 
-### Error Model
+## Output Format
 
-Typed error hierarchy rooted at `HashiError extends Error`:
-- `HashiTransactionError` — Move abort mapping
-- `HashiQueryError` — RPC/transport failures, object not found
-- `HashiParseError` — BCS decode failures, unknown event types
-- `HashiBitcoinError` — invalid addresses, unsupported formats
-- `HashiConfigError` — invalid config values, missing fields
+1. Executive Summary
+2. Scope and Non-Goals
+3. SDK Coverage Matrix (table: operation → panel → invocation mode)
+4. App Architecture
+5. Navigation & Layout Design
+6. Shared Component Model
+7. Operation Execution Flows
+8. State, Data Fetching, and Error Handling
+9. Config / Devnet Integration
+10. Implementation Phases
+11. Acceptance Criteria
+12. Risks / Open Questions
 
-APIs MUST throw (not return Result-like values). Matches `@mysten/sui` convention.
-
-**Validation timing**:
-- Builder methods MUST validate input format synchronously before returning the closure
-- Query methods MUST validate inputs before making RPC calls
-- Best-effort parsers return `null`; strict parsers throw `HashiParseError`
-
-**Abort code mapping**: Enumerate all known abort codes discoverable from the current Move package. Mark unknown/unverified mappings explicitly. Do not fabricate codes.
-
-### Build, Packaging, and Module Exports
-
-- Dual ESM/CJS output via esbuild (replicate `@mysten/build-scripts` locally)
-- TypeScript >=5.x, strict mode, ES2020 target, `moduleResolution: "node"`
-- Subpath exports in `package.json`: `.` (main), `./client`, `./transactions`, `./events`, `./bitcoin`, `./types`, `./queries`
-- Generated TypeScript declarations alongside compiled output
-- `@changesets/cli` for semantic versioning
-- Minimum Node.js 18
-- **Runtime compatibility**: MUST support Node.js and modern browsers. Runtime code MUST NOT use Node-only APIs (fs, path, crypto) unless isolated behind environment-specific entrypoints. `@noble/curves` and `@noble/hashes` are browser-compatible.
-- CI: type-check + lint + unit tests on every PR; codegen `is-dirty` check ensures generated code is committed
-
-### Testing
-
-- vitest for all tests
-- **BCS round-trips**: all generated types — serialize → deserialize → assert deep equality
-- **Event parser**: all 24 variants with mock event data; test parsing from two different package IDs (simulating upgrade)
-- **Transaction builders**: snapshot tests comparing PTB structure
-- **Bitcoin helpers**: known test vectors (BIP-173, BIP-350 for bech32/bech32m; secp256k1 for derivation)
-- **Config**: preset resolution, override behavior, validation errors
-- **Errors**: abort code → message mapping for all known codes
-- **Fixtures**: hand-crafted JSON/hex committed to repo (not generated at test time)
-- **Coverage**: no global threshold, but all public API functions MUST have at least one test. High-risk modules (bitcoin, events, transaction builders, error mapping) SHOULD have ≥80% branch coverage.
-- **Integration scaffolding**: placeholder structure for localnet testing (deposit, withdraw, cancel, queries) — optional in CI, gated behind env flag
-- **Snapshot review**: snapshot updates MUST be reviewed in PR diffs
-
-### Documentation
-
-- README with quickstart: install, configure, create deposit, request withdrawal
-- Package installation with peer dependency expectations (`@mysten/sui`)
-- One end-to-end example for user flow (deposit → query status → withdraw)
-- One end-to-end example for validator flow (register → confirm deposit → approve withdrawal)
-- Server vs browser signing guidance (SuiClient.signAndExecute vs dapp-kit)
-- Upgrade note about `packageId` vs `originalPackageId` handling
-- TSDoc on all public functions and types
-- Limitations and non-goals
-
-### Non-Goals
-
-The spec MUST explicitly list these as out of scope:
-- Signer/wallet management or key custody
-- Indexer or database integration
-- React components or dapp-kit UI bindings
-- MPC protocol implementation or BLS signing
-- Bitcoin transaction construction or broadcasting
-- Bitcoin full node integration
-- Real-time WebSocket event subscription helpers (just parsing, not transport)
-- Retry/backoff logic for RPC calls (caller's responsibility)
-
-### Future Extension Points
-
-The spec SHOULD identify these as natural future additions (out of scope for v1):
-- WebSocket subscription helpers wrapping `SuiClient.subscribeEvent`
-- Signer adapter interface for pluggable signing strategies
-- Indexer adapter for historical queries
-- React hooks package (`@hashi/react`) wrapping transaction builders
-
-### Constraints
-
-1. The Hashi Move package is external — codegen references it by relative path, not bundled
-2. `originalPackageId` MUST be used for coin type StructTags
-3. Current `packageId` MUST be used for Move call targets
-4. `commit_withdrawal_tx` requires manual BCS double-encoding helper
-5. `confirm_deposit` requires two-call PTB pattern
-6. `cancel_withdrawal` MUST transferObjects the returned Coin<BTC> to sender
-7. Only 20-byte (P2WPKH) and 32-byte (P2TR) Bitcoin addresses accepted
-8. Random object `0x8` required by `commit_withdrawal_tx`
-9. No public view functions on Hashi — all state reads via RPC
-
-### Implementation Planning
-
-End with a phased plan (5-7 cycles). For each phase include:
-- Scope and concrete deliverables
-- Dependencies on prior phases
-- Exit criteria (objective, testable — e.g., "`npx tsc --noEmit` exits 0", "all vitest tests pass")
-- Estimated complexity (simple / moderate / complex)
-- Risks
-
-Bias toward a spec that is explicit, implementable, and conservative about unsupported behavior.
+## Writing Constraints
+- Be concrete — specify component names, file paths, prop shapes
+- Do not assume a backend outside what the SDK and Sui devnet provide
+- Do not optimize for aesthetics — optimize for developer usefulness
+- When details depend on the actual SDK source, state the assumption and mark it for validation
+- Keep implementation phases independently testable
